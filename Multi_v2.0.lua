@@ -1,4 +1,9 @@
 -- Parametre utilisateur
+local minMinutesOnFarmingZone, maxMinutesOnFarmingZone = 5, 13
+local minPercentPodsBeforeBank, maxPercentPodsBeforeBank = 30, 90
+
+local minPercentLifeBeforeFight = 80
+
 local WORKTIME_JOB = {
     ["Lundi"] = {
         { startTime = "05:12", finishTime = "10:14", job = "Mineur" },
@@ -46,6 +51,14 @@ local WORKTIME_JOB = {
         { startTime = "23:22", finishTime = "05:12", job = "Pause" }
     }
 }
+
+-- Ankabot Params
+OPEN_BAGS = true
+GATHER = {}
+
+MIN_MONSTERS, MAX_MONSTERS = 1, 8
+FORBIDDEN_MONSTERS, FORCE_MONSTERS = {}, {}
+
 
 local GatherInfo = {
     -- Bucheron
@@ -113,8 +126,6 @@ local GatherInfo = {
 
 local bankMapId = 192415750
 
-GATHER = {}
-
 Zone = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Zone.lua")
 Monsters = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Monsters.lua")
 Movement = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Movement.lua")
@@ -126,18 +137,21 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
     Worker = {}
     Time = {}
     Error = {}
+    Math = {}
 
     -- Move
 
     Movement.inBank = false
     Movement.printBank = false
 
-    Movement.loadedMapToFarm = false
+    Movement.configRoad = false
     Movement.mapIdToRoad = {}
 
     Movement.dropAction = ""
 
     Movement.podsMaxBeforeBank = 0
+
+    Movement.lastSubAreaFarmed = 0
 
     function Movement:Move()
         self.inBank = false
@@ -152,22 +166,31 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
 
         if not Craft.canCraft and Craft.selectedItemToFarm then
 
-            if not self.loadedMapToFarm then
-                self:LoadMapToFarm()
+            if not self.configRoad then
+                self:ConfigRoad()
             end
 
-            if self.loadedMapToFarm then
-                if Movement:InMapChecker(self.mapIdToRoad) then
-                    if self.dropAction =="fight" then
+            if self.configRoad then
+
+                if self.dropAction =="fight" then
+                    if Movement:InMapChecker(self.mapIdToRoad) then
+                        local printLife = false
+                        while minPercentLifeBeforeFight > character:lifePointsP() do
+                            if not printLife then
+                                Utils:Print("Régénération des PV avant combat !", "Combat")
+                                printLife = true
+                            end
+                            global:delay(1)
+                        end
                         map:fight()
-                    else
-                        map:gather()
                     end
+                else
+                    map:gather()
                 end
 
                 if Time:Timer() then
-                    Utils:Print("Changement de ressource a farm")
-                    self.loadedMapToFarm = false
+                    Utils:Print("Changement de ressource a farm", "Farming")
+                    self.configRoad = false
                     Craft.selectedItemToFarm = false
                     self:Move()
                 end
@@ -177,12 +200,12 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
         end
     end
 
-    function Movement:LoadMapToFarm()
+    function Movement:ConfigRoad()
         self.mapIdToRoad = {}
         local mstrDrop = Monsters:GetMonsterIdByDropId(Craft.ItemsToDrop[Craft.currentIndexItemToDrop].itemId)
 
         if mstrDrop ~= nil and Utils:LenghtOfTable(mstrDrop) > 0 then
-            Utils:Print("Fight mode", "LoadMapToFarm")
+            Utils:Print("Fight mode", "ConfigRoad")
             self.dropAction = "fight"
             for _, v in pairs(mstrDrop) do
                 local favArea = Monsters:GetFavoriteSubArea(v)
@@ -190,15 +213,46 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
                 if favArea ~= nil then
                     local subAreaMapId = Zone:GetSubAreaMapId(favArea)
                     if subAreaMapId ~= nil then
-                        for _, mapId in pairs(subAreaMapId) do
-                            table.insert(self.mapIdToRoad, mapId)
+                        FORBIDDEN_MONSTERS = {}
+                        FORCE_MONSTERS = {}
+
+                        local monsterInfo = Monsters:GetMonstersInfoByGrade(v, 5)
+
+                        local diffPercent = Math:DiffPercent(character:level(), monsterInfo.level)
+
+                        if diffPercent >= 150 then
+                            MIN_MONSTERS = 4
+                            MAX_MONSTERS = 8
+                        elseif diffPercent >= 100 then
+                            MIN_MONSTERS = 4
+                            MAX_MONSTERS = 6
+                        elseif diffPercent >= 75 then
+                            MIN_MONSTERS = 3
+                            MAX_MONSTERS = 5
+                        elseif diffPercent >= 50 then
+                            MIN_MONSTERS = 2
+                            MAX_MONSTERS = 3
+                        elseif diffPercent >= 25 then
+                            MIN_MONSTERS = 1
+                            MAX_MONSTERS = 3
+                        elseif diffPercent >= 0 then
+                            MIN_MONSTERS = 1
+                            MAX_MONSTERS = 2
+                        elseif diffPercent < 0 then
+                            MIN_MONSTERS = 1
+                            MAX_MONSTERS = 1
                         end
+
+                        table.insert(FORCE_MONSTERS, v)
+
+                        self.mapIdToRoad = subAreaMapId
+                        break
                     end
                 end
             end
 
         else
-            Utils:Print("Gather mode", "LoadMapToFarm")
+            Utils:Print("Gather mode", "ConfigRoad")
             self.dropAction = "gather"
             GATHER = {}
 
@@ -206,6 +260,7 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
                 if v.objectId == Craft.ItemsToDrop[Craft.currentIndexItemToDrop].itemId then
                     if job:level(v.jobId) < v.minLvlToFarm then
                         local possibleResFarm = {}
+
                         Utils:Print("Vous n'avez pas le niveau requis pour farm la ressouce " .. inventory:itemNameId(v.objectId), "Info")
                         for _, v2 in pairs(GatherInfo) do
                             if v2.jobId == v.jobId and job:level(v.jobId) >= v2.minLvlToFarm then
@@ -227,16 +282,26 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
 
                         local subAreaContainsResToFarm = Zone:RetrieveSubAreaContainingRessource(gatherIdToFarm)
 
-                        local totalMapContainsRes = 0
-                        local subAreaIdToFarm = 0
+                        local function getRandSubArea()
 
-                        for kSubAreaId, vMaps in pairs(subAreaContainsResToFarm) do
-                            if #vMaps > totalMapContainsRes then
-                                totalMapContainsRes = #vMaps
-                                subAreaIdToFarm = kSubAreaId
-                                self.mapIdToRoad = vMaps
+                            local rand = global:random(1, Utils:LenghtOfTable(subAreaContainsResToFarm))
+
+                            local i = 1
+
+                            for kSubAreaId, vMaps in pairs(subAreaContainsResToFarm) do
+                                if i == rand then
+                                    if self.lastSubAreaFarmed == kSubAreaId and Utils:LenghtOfTable(subAreaContainsResToFarm) > 1 then
+                                        getRandSubArea()
+                                    end
+                                    self.lastSubAreaFarmed = kSubAreaId
+                                    self.mapIdToRoad = vMaps
+                                    break
+                                end
+                                i = i + 1
                             end
                         end
+
+                        getRandSubArea()
                     else
                         Utils:Print("Test", "Info")
                     end
@@ -245,7 +310,7 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
         end
 
         if Utils:LenghtOfTable(self.mapIdToRoad) > 0 then
-            self.loadedMapToFarm = true
+            self.configRoad = true
         end
     end
 
@@ -309,8 +374,8 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
 
     function Time:Timer()
         if not self.TimerInitialized then
-            self.TimerRandTimeToWait = global:random(2, 3)
-            Utils:Print("Changement de zone dans "..self.TimerRandTimeToWait.." minutes")
+            self.TimerRandTimeToWait = global:random(minMinutesOnFarmingZone, maxMinutesOnFarmingZone)
+            Utils:Print("Changement de zone dans "..self.TimerRandTimeToWait.." minutes", "Timer")
             self.TimerHourStart, self.TimerMinuteStart = Utils:GenerateDateTime("h"), Utils:GenerateDateTime("m")
             self.TimerInitialized = true
         end
@@ -374,34 +439,6 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
 
     Craft.craftQueue = {}
 
-    Craft.gatherInfo = {
-        ["Chataignier"] = {
-            gatherId = 33,
-            objectId = 473,
-            minLvlToFarm = 20,
-            jobId = 2
-        },
-        ["Cuivre"] = {
-            gatherId = 53,
-            objectId = 441,
-            minLvlToFarm = 20,
-            jobId = 24
-        },
-        ["Sauge"] = {
-            gatherId = 255,
-            objectId = 428,
-            minLvlToFarm = 20,
-            jobId = 26
-        },
-        ["Orge"] = {
-            gatherId = 43,
-            objectId = 400,
-            minLvlToFarm = 20,
-            jobId = 28
-        }
-    }
-
-
     function Craft:CraftManager()
         if not self.propertiesInit then
             self:InitCraftProperties()
@@ -419,16 +456,19 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
 
         if not self.canCraft then
             while not self.selectedItemToFarm do
-                local rand = global:random(4, Utils:LenghtOfTable(self.ItemsToDrop))
+                if Utils:LenghtOfTable(self.ItemsToDrop) > 1 then
+                    local rand = global:random(1, Utils:LenghtOfTable(self.ItemsToDrop))
 
-                -- Ajouter gestion fight (prioriser le monstre qui drop l'item manquant
-
-                if rand ~= self.currentIndexItemToDrop and inventory:itemCount(self.ItemsToDrop[rand].itemId) < self.ItemsToDrop[rand].itemsToRetrieve then
-                    self.currentIndexItemToDrop = rand
+                    if rand ~= self.currentIndexItemToDrop and inventory:itemCount(self.ItemsToDrop[rand].itemId) < self.ItemsToDrop[rand].itemsToRetrieve then
+                        self.currentIndexItemToDrop = rand
+                        self.selectedItemToFarm = true
+                        Utils:Print("Go drop "..inventory:itemNameId(self.ItemsToDrop[rand].itemId), "Info")
+                    end
+                else
+                    self.currentIndexItemToDrop = 1
                     self.selectedItemToFarm = true
-                    Utils:Print("Go drop "..inventory:itemNameId(self.ItemsToDrop[rand].itemId))
+                    Utils:Print("Go drop "..inventory:itemNameId(self.ItemsToDrop[1].itemId), "Info")
                 end
-
             end
         end
 
@@ -523,7 +563,6 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
                         workshopInfo = vWorkShopInfo
                         break
                     end
-
                 end
 
                 if workshopInfo ~= nil then
@@ -536,7 +575,7 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
     end
 
     function Craft:CheckCraft()
-        Utils:Print("Check craft")
+        Utils:Print("Check craft", "Info")
 
         self.currentCraft = self:GetCurrentCraft()
 
@@ -571,8 +610,7 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
             Utils:Print("Can craft")
 
         else
-            --Movement.podsMaxBeforeBank = global:random(30, 90)
-            Movement.podsMaxBeforeBank = 10
+            Movement.podsMaxBeforeBank = global:random(minPercentPodsBeforeBank, maxPercentPodsBeforeBank)
             Utils:Print("Prochain retour a la banque a " .. Movement.podsMaxBeforeBank .. "% pods", "Info")
         end
 
@@ -686,6 +724,12 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
     function Error:ErrorManager(msgError, funcName)
         Utils:Print(msgError..", arrêt du script", funcName, "error")
         global:finishScript()
+    end
+
+    -- Math
+
+    function Math:DiffPercent(a, b)
+        return (a - b) / b * 100
     end
 
 -- Ankabot Main Func
