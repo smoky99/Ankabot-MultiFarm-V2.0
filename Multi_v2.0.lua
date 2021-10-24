@@ -140,9 +140,14 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
     Math = {}
 
     -- Move
+    Movement.savedZaap = {}
 
     Movement.inBank = false
     Movement.printBank = false
+
+    Movement.goToSaveZaap = false
+    Movement.goToMapId  = 0
+
 
     Movement.configRoad = false
     Movement.mapIdToRoad = {}
@@ -155,6 +160,16 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
 
     function Movement:Move()
         self.inBank = false
+
+        if self.goToSaveZaap then
+            if map:currentMapId() ~= self.goToMapId then
+                Movement:LoadRoad(self.goToMapId)
+                Movement:MoveNext()
+            else
+                self.goToSaveZaap = false
+                self.goToMapId = 0
+            end
+        end
 
         if inventory:podsP() >= self.podsMaxBeforeBank then
             Craft.checkPossibleCraft = false
@@ -197,6 +212,39 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
 
                 Movement:RoadZone(self.mapIdToRoad)
             end
+        end
+    end
+
+    function Movement:RoadZone(tblMapId)
+        if tblMapId ~= nil and Utils:LenghtOfTable(tblMapId) > 0 then
+            if map:currentMapId() == self.RZNextMapId or self.RZNextMapId == -1 then
+
+                self.RZNextMapId = tblMapId[global:random(1, Utils:LenghtOfTable(tblMapId))]
+
+                local dist = map:GetPathDistance(map:currentMapId(), self.RZNextMapId)
+
+                if dist > 20 then
+                    self:HavenBag()
+                end
+
+                if not map:loadMove(self.RZNextMapId) then
+                    Utils:Print("Impossible de charger un chemin jusqu'a la mapId : ("..self.RZNextMapId..") changement de map avant re tentative", "RoadZone", "warn")
+                end
+            end
+
+            if map:currentMap() == "0,0" then
+                local nextMap = self.RZNextMapId
+                self.RZNextMapId = -1
+                self:UseZaap(nextMap)
+            end
+
+            self:MoveNext()
+
+            --Utils:Print("Apres MoveNext", "RoadZone")
+            self.RZNextMapId = -1
+            self:RoadZone(tblMapId)
+        else
+            Utils:Print("Table nil", "RoadZone", "error")
         end
     end
 
@@ -357,7 +405,8 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
         if map:currentMap() ~= "0,0" then
             source = 0
         end
-        map:toZaap(map:closestZaap(mapIdDest), source)
+
+        map:toZaap(self:CanUseZaap(mapIdDest), source)
     end
 
     function Movement:UseBank()
@@ -365,7 +414,41 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
         exchange:putAllItems()
     end
 
-    -- Time
+    function Movement:CanUseZaap(mapIdDest)
+        developer:registerMessage("ZaapDestinationsMessage", CB_ZaapDestinationsMessage)
+        local closestZaap = map:closestZaap(mapIdDest)
+        developer:suspendScriptUntil("ZaapDestinationsMessage", 100, false)
+        developer:unRegisterMessage("ZaapDestinationsMessage")
+
+        for _, v in pairs(self.savedZaap) do
+            if Utils:Equal(v, closestZaap) then
+                return closestZaap
+            end
+        end
+
+        self.goToSaveZaap = true
+        self.goToMapId = closestZaap
+        global:leaveDialog()
+        if map:currentMap() == "0,0" then
+            map:changeMap('havenbag')
+        end
+    end
+
+    function CB_ZaapDestinationsMessage(packet)
+        for _, v in pairs(packet.destinations) do
+            local alreadySaved = false
+            for _, v2 in pairs(Movement.savedZaap) do
+                if Utils:Equal(v.mapId, v2) then
+                    alreadySaved = true
+                    break
+                end
+            end
+            if not alreadySaved then
+                table.insert(Movement.savedZaap, v.mapId)
+            end
+        end
+    end
+    -- Timem
 
     Time.TimerInitialized = false
     Time.TimerHourStart = 0
