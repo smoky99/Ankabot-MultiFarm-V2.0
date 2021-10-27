@@ -1,32 +1,23 @@
 -- Parametre utilisateur
-local minMinutesOnFarmingZone, maxMinutesOnFarmingZone = 5, 13
+local minMinutesOnFarmingZone, maxMinutesOnFarmingZone = 3, 5
 local minPercentPodsBeforeBank, maxPercentPodsBeforeBank = 30, 90
 
 local minPercentLifeBeforeFight = 80
 
 local WORKTIME_JOB = {
     ["Lundi"] = {
-        { startTime = "05:12", finishTime = "10:14", job = "Mineur" },
-        { startTime = "10:14", finishTime = "23:04", job = "Bricoleur" },
-        { startTime = "12:04", finishTime = "13:12", job = "Pause" },
-        { startTime = "13:12", finishTime = "15:22", job = "Bucheron" },
-        { startTime = "15:22", finishTime = "17:43", job = "Mineur" },
-        { startTime = "17:43", finishTime = "20:58", job = "Alchimiste" },
-        { startTime = "20:58", finishTime = "23:22", job = "Bucheron" },
-        { startTime = "23:22", finishTime = "05:12", job = "Pause" },
+        { startTime = "05:14", finishTime = "23:59", job = "Bricoleur" },
     },
     ["Mardi"] = {
-        { startTime = "20:12", finishTime = "23:45", job = "Mineur" },
-        { startTime = "06:07", finishTime = "23:50", job = "Alchimiste" }
+        { startTime = "06:07", finishTime = "23:50", job = "Bricoleur" }
     },
     ["Mercredi"] = {
-        { startTime = "10:00", finishTime = "23:45", job = "Bricoleur" },
-        { startTime = "23:45", finishTime = "08:50", job = "Alchimiste" }
+        { startTime = "06:00", finishTime = "23:45", job = "Bricoleur" },
     },
     ["Jeudi"] = {
         { startTime = "02:10", finishTime = "23:50", job = "Bricoleur" },
         { startTime = "19:50", finishTime = "19:55", job = "Chasse au trésor" },
-        { startTime = "13:13", finishTime = "13:14", job = "" }      
+        { startTime = "13:13", finishTime = "13:14", job = "" }
     },
     ["Vendredi"] = {
         { startTime = "06:10", finishTime = "10:30", job = "Mineur" },
@@ -138,38 +129,27 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
     Time = {}
     Error = {}
     Math = {}
+    Packet = {}
 
     -- Move
-    Movement.savedZaap = {}
+    Movement.zaapDestinations = {}
 
     Movement.inBank = false
     Movement.printBank = false
 
-    Movement.goToSaveZaap = false
-    Movement.goToMapId  = 0
-
-
     Movement.configRoad = false
     Movement.mapIdToRoad = {}
+
+    Movement.tpZoneFarm = false
 
     Movement.dropAction = ""
 
     Movement.podsMaxBeforeBank = 0
 
-    Movement.lastSubAreaFarmed = 0
+    Movement.logFarmedZone = {}
 
     function Movement:Move()
         self.inBank = false
-
-        if self.goToSaveZaap then
-            if map:currentMapId() ~= self.goToMapId then
-                Movement:LoadRoad(self.goToMapId)
-                Movement:MoveNext()
-            else
-                self.goToSaveZaap = false
-                self.goToMapId = 0
-            end
-        end
 
         if inventory:podsP() >= self.podsMaxBeforeBank then
             Craft.checkPossibleCraft = false
@@ -206,6 +186,7 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
                 if Time:Timer() then
                     Utils:Print("Changement de ressource a farm", "Farming")
                     self.configRoad = false
+                    self.tpZoneFarm = false
                     Craft.selectedItemToFarm = false
                     self:Move()
                 end
@@ -216,27 +197,27 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
     end
 
     function Movement:RoadZone(tblMapId)
-        if tblMapId ~= nil and Utils:LenghtOfTable(tblMapId) > 0 then
+        if tblMapId ~= nil and #tblMapId > 0 then
             if map:currentMapId() == self.RZNextMapId or self.RZNextMapId == -1 then
 
-                self.RZNextMapId = tblMapId[global:random(1, Utils:LenghtOfTable(tblMapId))]
-
-                local dist = map:GetPathDistance(map:currentMapId(), self.RZNextMapId)
-
-                if dist > 20 then
-                    self:HavenBag()
-                end
+                self.RZNextMapId = tblMapId[global:random(1, #tblMapId)]
 
                 if not map:loadMove(self.RZNextMapId) then
                     Utils:Print("Impossible de charger un chemin jusqu'a la mapId : ("..self.RZNextMapId..") changement de map avant re tentative", "RoadZone", "warn")
                 end
             end
 
-            if map:currentMap() == "0,0" then
-                local nextMap = self.RZNextMapId
-                self.RZNextMapId = -1
-                self:UseZaap(nextMap)
+            if not self.tpZoneFarm then
+                if map:currentMap() == "0,0" then
+                    self.tpZoneFarm = true
+                    local nextMap = self.RZNextMapId
+                    self.RZNextMapId = -1
+                    self:UseZaap(nextMap)
+                else
+                    self:HavenBag()
+                end
             end
+
 
             self:MoveNext()
 
@@ -251,6 +232,56 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
     function Movement:ConfigRoad()
         self.mapIdToRoad = {}
         local mstrDrop = Monsters:GetMonsterIdByDropId(Craft.ItemsToDrop[Craft.currentIndexItemToDrop].itemId)
+
+        local function getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
+            if Utils:LenghtOfTable(self.logFarmedZone) > 10 then
+                table.remove(self.logFarmedZone, 11)
+            end
+
+            local rand = global:random(1, Utils:LenghtOfTable(subAreaContainsResToFarm))
+
+            local i = 1
+
+            for kSubAreaId, vMaps in pairs(subAreaContainsResToFarm) do
+                if i == rand then
+                    if Utils:LenghtOfTable(subAreaContainsResToFarm) > 1 then
+                        for _, vLog in pairs(self.logFarmedZone) do
+                            if gatherIdToFarm == vLog.gatherId then
+                                if kSubAreaId == vLog.subAreaId then
+                                    Utils:Print("Re rand")
+                                    getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
+                                else
+                                    break
+                                end
+                            end
+                        end
+                    end
+
+                    local countResInSubArea = 0
+
+                    for _, vMap in pairs(vMaps) do
+                        for _, vGather in pairs(vMap.gatherElements) do
+                            if Utils:Equal(vGather.gatherId, gatherIdToFarm) then
+                                countResInSubArea = countResInSubArea + vGather.count
+                            end
+                        end
+                    end
+
+                    if countResInSubArea > 10 then
+                        table.insert(self.logFarmedZone, { gatherId = gatherIdToFarm, subAreaId = kSubAreaId })
+
+                        for _, vMap in pairs(vMaps) do
+                            table.insert(self.mapIdToRoad, vMap.mapId)
+                        end
+
+                        break
+                    else
+                        getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
+                    end
+                end
+                i = i + 1
+            end
+        end
 
         if mstrDrop ~= nil and Utils:LenghtOfTable(mstrDrop) > 0 then
             Utils:Print("Fight mode", "ConfigRoad")
@@ -319,10 +350,10 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
                         local maxLvl = 0
                         local gatherIdToFarm = 0
 
-                        for _, v in pairs(possibleResFarm) do
-                            if v.minLvlToFarm > maxLvl then
-                                maxLvl = v.minLvlToFarm
-                                gatherIdToFarm = v.gatherId
+                        for _, vRes in pairs(possibleResFarm) do
+                            if vRes.minLvlToFarm > maxLvl then
+                                maxLvl = vRes.minLvlToFarm
+                                gatherIdToFarm = vRes.gatherId
                             end
                         end
 
@@ -330,28 +361,21 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
 
                         local subAreaContainsResToFarm = Zone:RetrieveSubAreaContainingRessource(gatherIdToFarm)
 
-                        local function getRandSubArea()
+                        getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
+                    else
+                        local gatherIdToFarm = 0
 
-                            local rand = global:random(1, Utils:LenghtOfTable(subAreaContainsResToFarm))
-
-                            local i = 1
-
-                            for kSubAreaId, vMaps in pairs(subAreaContainsResToFarm) do
-                                if i == rand then
-                                    if self.lastSubAreaFarmed == kSubAreaId and Utils:LenghtOfTable(subAreaContainsResToFarm) > 1 then
-                                        getRandSubArea()
-                                    end
-                                    self.lastSubAreaFarmed = kSubAreaId
-                                    self.mapIdToRoad = vMaps
-                                    break
-                                end
-                                i = i + 1
+                        for _, vGather in pairs(GatherInfo) do
+                            if vGather.objectId == Craft.ItemsToDrop[Craft.currentIndexItemToDrop].itemId then
+                                gatherIdToFarm = vGather.gatherId
+                                table.insert(GATHER, vGather.gatherId)
+                                break
                             end
                         end
 
-                        getRandSubArea()
-                    else
-                        Utils:Print("Test", "Info")
+                        local subAreaContainsResToFarm = Zone:RetrieveSubAreaContainingRessource(gatherIdToFarm)
+
+                        getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
                     end
                 end
             end
@@ -364,6 +388,7 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
 
     function Movement:Bank()
         Craft.checkPossibleCraft = false
+        self.tpZoneFarm = false
         return self:Move()
     end
 
@@ -400,13 +425,52 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
         end
     end
 
-    function Movement:UseZaap(mapIdDest)
+    function Movement:UseZaap(mapIdDest, zaapCellId)
         local source = 3
+        zaapCellId = zaapCellId or 310
+
+        developer:registerMessage("ZaapDestinationsMessage", CB_ZaapDestinations)
+
         if map:currentMap() ~= "0,0" then
             source = 0
+        else
+            map:door(zaapCellId)
         end
 
-        map:toZaap(self:CanUseZaap(mapIdDest), source)
+        developer:suspendScriptUntil("ZaapDestinationsMessage", 100, false)
+        developer:unRegisterMessage("ZaapDestinationsMessage")
+
+        local closestZaap = self:ClosestZaap(mapIdDest)
+
+        if closestZaap == 0 then
+            map:changeMap('havenbag')
+        else
+            Packet:SendPacket("TeleportRequestMessage", function(msg)
+                msg.sourceType = source
+                msg.destinationType = 0
+                msg.mapId = closestZaap
+                return msg
+            end)
+        end
+        global:delay(1000)
+    end
+
+    function Movement:ClosestZaap(mapIdDest)
+        local dist = 0
+        local map = 0
+
+        for _, v in pairs(self.zaapDestinations) do
+            if dist == 0 and v.cost < character:kamas() then
+                dist = self:MapDistance(mapIdDest, v.mapId)
+                map = v.mapId
+            elseif self:MapDistance(mapIdDest, v.mapId) < dist and v.cost < character:kamas() then
+                dist = self:MapDistance(mapIdDest, v.mapId)
+                map = v.mapId
+            end
+        end
+        Utils:Print(map)
+
+        return map
     end
 
     function Movement:UseBank()
@@ -414,82 +478,40 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
         exchange:putAllItems()
     end
 
-    function Movement:CanUseZaap(mapIdDest)
-        developer:registerMessage("ZaapDestinationsMessage", CB_ZaapDestinationsMessage)
-        local closestZaap = map:closestZaap(mapIdDest)
-        developer:suspendScriptUntil("ZaapDestinationsMessage", 100, false)
-        developer:unRegisterMessage("ZaapDestinationsMessage")
+    function Movement:MapDistance(mapIdStart, mapIdEnd)
+        local startX = map:getX(mapIdStart)
+        local startY = map:getY(mapIdStart)
+        local endX = map:getX(mapIdEnd)
+        local endY = map:getY(mapIdEnd)
 
-        for _, v in pairs(self.savedZaap) do
-            if Utils:Equal(v, closestZaap) then
-                return closestZaap
-            end
+        local iStep = 1
+
+        local dist = 0
+
+        if startX > endX then
+            iStep = -1
         end
 
-        self.goToSaveZaap = true
-        self.goToMapId = closestZaap
-        global:leaveDialog()
-        if map:currentMap() == "0,0" then
-            map:changeMap('havenbag')
+        for _ = startX, endX, iStep do
+            dist = dist + 1
         end
+
+        if startY > endY then
+            iStep = -1
+        elseif iStep == -1 then
+            iStep = 1
+        end
+
+        for _ = startY, endY, iStep do
+            dist = dist + 1
+        end
+
+        return dist
     end
 
-    function CB_ZaapDestinationsMessage(packet)
+    function CB_ZaapDestinations(packet)
         for _, v in pairs(packet.destinations) do
-            local alreadySaved = false
-            for _, v2 in pairs(Movement.savedZaap) do
-                if Utils:Equal(v.mapId, v2) then
-                    alreadySaved = true
-                    break
-                end
-            end
-            if not alreadySaved then
-                table.insert(Movement.savedZaap, v.mapId)
-            end
-        end
-    end
-    -- Timem
-
-    Time.TimerInitialized = false
-    Time.TimerHourStart = 0
-    Time.TimerMinuteStart = 0
-    Time.TimerRandTimeToWait = 0
-
-    function Time:Timer()
-        if not self.TimerInitialized then
-            self.TimerRandTimeToWait = global:random(minMinutesOnFarmingZone, maxMinutesOnFarmingZone)
-            Utils:Print("Changement de zone dans "..self.TimerRandTimeToWait.." minutes", "Timer")
-            self.TimerHourStart, self.TimerMinuteStart = Utils:GenerateDateTime("h"), Utils:GenerateDateTime("m")
-            self.TimerInitialized = true
-        end
-
-        local curH, curM = Utils:GenerateDateTime("h"), Utils:GenerateDateTime("m")
-
-        if self:DiffTime(self.TimerHourStart, self.TimerMinuteStart, curH, curM) >= self.TimerRandTimeToWait then
-            self.TimerInitialized = false
-            self.TimerHourStart = 0
-            self.TimerMinuteStart = 0
-            self.TimerRandTimeToWait = 0
-            return true
-        end
-        return false
-    end
-
-    function Time:DiffTime(hStart, mStart, hFinish, mFinish)
-        local diffTimeMin = 0
-        while true do
-            if hStart == hFinish and mStart == mFinish then
-                return diffTimeMin
-            end
-            if mStart == 60 then
-                hStart = hStart + 1
-                mStart = 0
-            end
-            if hStart == 24 then
-                hStart = 0  
-            end
-            diffTimeMin = diffTimeMin + 1
-            mStart = mStart + 1
+            table.insert(Movement.zaapDestinations, v)
         end
     end
 
@@ -800,6 +822,64 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
         else
             self.init = true
         end
+    end
+
+    -- Time
+
+    Time.TimerInitialized = false
+    Time.TimerHourStart = 0
+    Time.TimerMinuteStart = 0
+    Time.TimerRandTimeToWait = 0
+
+    function Time:Timer()
+        if not self.TimerInitialized then
+            self.TimerRandTimeToWait = global:random(minMinutesOnFarmingZone, maxMinutesOnFarmingZone)
+            Utils:Print("Changement de zone dans "..self.TimerRandTimeToWait.." minutes", "Timer")
+            self.TimerHourStart, self.TimerMinuteStart = Utils:GenerateDateTime("h"), Utils:GenerateDateTime("m")
+            self.TimerInitialized = true
+        end
+
+        local curH, curM = Utils:GenerateDateTime("h"), Utils:GenerateDateTime("m")
+
+        if self:DiffTime(self.TimerHourStart, self.TimerMinuteStart, curH, curM) >= self.TimerRandTimeToWait then
+            self.TimerInitialized = false
+            self.TimerHourStart = 0
+            self.TimerMinuteStart = 0
+            self.TimerRandTimeToWait = 0
+            return true
+        end
+        return false
+    end
+
+    function Time:DiffTime(hStart, mStart, hFinish, mFinish)
+        local diffTimeMin = 0
+        while true do
+            if hStart == hFinish and mStart == mFinish then
+                return diffTimeMin
+            end
+            if mStart == 60 then
+                hStart = hStart + 1
+                mStart = 0
+            end
+            if hStart == 24 then
+                hStart = 0  
+            end
+            diffTimeMin = diffTimeMin + 1
+            mStart = mStart + 1
+        end
+    end
+
+    -- Packet
+
+    function Packet:SendPacket(packetName, fn)
+        Utils:Print("Envoie du packet "..packetName, "packet")
+        local msg = developer:createMessage(packetName)
+
+        if fn ~= nil then
+            msg = fn(msg)
+        end
+
+        developer:sendMessage(msg)
     end
 
     -- Erreur
