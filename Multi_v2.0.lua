@@ -1,15 +1,15 @@
 -- Parametre utilisateur
 local minMinutesOnFarmingZone, maxMinutesOnFarmingZone = 3, 5
-local minPercentPodsBeforeBank, maxPercentPodsBeforeBank = 30, 90
+local minPercentPodsBeforeBank, maxPercentPodsBeforeBank = 70, 90
 
 local minPercentLifeBeforeFight = 80
 
 local WORKTIME_JOB = {
     ["Lundi"] = {
-        { startTime = "05:14", finishTime = "23:59", job = "Bricoleur" },
+        { startTime = "05:14", finishTime = "23:59", job = "Mineur" },
     },
     ["Mardi"] = {
-        { startTime = "06:07", finishTime = "23:50", job = "Bricoleur" }
+        { startTime = "06:07", finishTime = "23:50", job = "Mineur" }
     },
     ["Mercredi"] = {
         { startTime = "06:00", finishTime = "23:45", job = "Bricoleur" },
@@ -20,14 +20,11 @@ local WORKTIME_JOB = {
         { startTime = "13:13", finishTime = "13:14", job = "" }
     },
     ["Vendredi"] = {
-        { startTime = "06:10", finishTime = "10:30", job = "Mineur" },
-        { startTime = "10:30", finishTime = "11:00", job = "Alchimiste" },
-        { startTime = "11:00", finishTime = "12:00", job = "Bucheron" },
-        { startTime = "12:00", finishTime = "23:24", job = "Bricoleur" },
+        { startTime = "06:00", finishTime = "23:59", job = "Bricoleur" },
 
     },
     ["Samedi"] = {
-        { startTime = "10:00", finishTime = "23:59", job = "Bricoleur" }
+        { startTime = "06:00", finishTime = "23:59", job = "Bricoleur" }
     },
     ["Dimanche"] = {
         { startTime = "00:02", finishTime = "23:50", job = "Bricoleur" },
@@ -44,7 +41,6 @@ local WORKTIME_JOB = {
 }
 
 -- Ankabot Params
-OPEN_BAGS = true
 GATHER = {}
 
 MIN_MONSTERS, MAX_MONSTERS = 1, 8
@@ -93,9 +89,9 @@ local GatherInfo = {
     Manganese = { name = "Manganèse", gatherId = 54, objectId = 445, jobId = 24, minLvlToFarm = 80 },
     Etain = { name = "Etain", gatherId = 52, objectId = 444, jobId = 24, minLvlToFarm = 100 },
     Silicate = { name = "Silicate", gatherId = 114, objectId = 7032, jobId = 24, minLvlToFarm = 100 },
-    Argent = { name = "Argent", gatherId = 24, objectId = 312, jobId = 24, minLvlToFarm = 120 },
+    Argent = { name = "Argent", gatherId = 24, objectId = 350, jobId = 24, minLvlToFarm = 120 },
     Bauxite = { name = "Bauxite", gatherId = 26, objectId = 446, jobId = 24, minLvlToFarm = 140 },
-    Or = { name = "Or", gatherId = 25, objectId = 312, jobId = 24, minLvlToFarm = 160 },
+    Or = { name = "Or", gatherId = 25, objectId = 313, jobId = 24, minLvlToFarm = 160 },
     Dolomite = { name = "Dolomite", gatherId = 113, objectId = 7033, jobId = 24, minLvlToFarm = 180 },
     Obsidienne = { name = "Obsidienne", gatherId = 135, objectId = 11110, jobId = 24, minLvlToFarm = 200 },
     -- Paysan
@@ -122,6 +118,7 @@ Monsters = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Monsters.lua"
 Movement = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Movement.lua")
 Craft = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Craft.lua")
 Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
+Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
 
 -- Classes
 
@@ -130,6 +127,8 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
     Error = {}
     Math = {}
     Packet = {}
+    Action = {}
+    PathFinder = {}
 
     -- Move
     Movement.zaapDestinations = {}
@@ -147,6 +146,20 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
     Movement.podsMaxBeforeBank = 0
 
     Movement.logFarmedZone = {}
+    Movement.logRZNextMapId = {}
+
+    Movement.lastFailMapId = 0
+    Movement.countFailMoveNext = 0
+
+    Movement.excludeMapId = {
+        183762952,
+        183762954
+    }
+
+    Movement.monsterDropItem = {}
+
+    Movement.pathMineLoaded = false
+    Movement.pathMine = {}
 
     function Movement:Move()
         self.inBank = false
@@ -154,6 +167,8 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
         if inventory:podsP() >= self.podsMaxBeforeBank then
             Craft.checkPossibleCraft = false
         end
+
+        Action:OpenBags()
 
         Worker:WorkManager()
 
@@ -167,73 +182,111 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
 
             if self.configRoad then
 
-                if self.dropAction =="fight" then
-                    if Movement:InMapChecker(self.mapIdToRoad) then
-                        local printLife = false
-                        while minPercentLifeBeforeFight > character:lifePointsP() do
-                            if not printLife then
-                                Utils:Print("Régénération des PV avant combat !", "Combat")
-                                printLife = true
-                            end
-                            global:delay(1)
-                        end
-                        map:fight()
+                if Movement:InMapChecker(self.mapIdToRoad) then
+                    local min, max = 0, 0
+
+                    if #self.mapIdToRoad < 5 then
+                        min, max = 1, 2
+                    elseif #self.mapIdToRoad < 10 then
+                        min, max = 2, 4
+                    elseif #self.mapIdToRoad < 15 then
+                        min, max = 3, 4
+                    elseif #self.mapIdToRoad < 20 then
+                        min, max = 4, 5
+                    elseif #self.mapIdToRoad < 25 then
+                        min, max = 5, 6
+                    elseif #self.mapIdToRoad < 30 then
+                        min, max = 6, 8
+                    else
+                        min, max = 7, 10
                     end
-                else
-                    map:gather()
+
+                    if Time:Timer(min, max) then
+                        Utils:Print("Changement de ressource a farm", "Farming")
+                        self.configRoad = false
+                        self.tpZoneFarm = false
+                        self.RZNextMapId = -1
+                        Craft.selectedItemToFarm = false
+                        self:Move()
+                    end
                 end
 
-                if Time:Timer() then
-                    Utils:Print("Changement de ressource a farm", "Farming")
-                    self.configRoad = false
-                    self.tpZoneFarm = false
-                    Craft.selectedItemToFarm = false
-                    self:Move()
+                if self.dropAction =="fight" then
+                    if Movement:InMapChecker(self.mapIdToRoad) then
+                        FORCE_MONSTERS = {}
+                        FORBIDDEN_MONSTERS = {}
+
+                        local monsterGroupInfo = map:monsterGroups()
+
+                        for _, vGroup in pairs(monsterGroupInfo) do
+                            local canFight = false
+                            if #vGroup.monsters >= MIN_MONSTERS and #vGroup.monsters <= MAX_MONSTERS then
+                                for _, vMonster in pairs(vGroup.monsters) do
+                                    for _, v in pairs(self.monsterDropItem) do
+                                        if v == vMonster.id then
+                                            canFight = true
+                                            break
+                                        end
+                                    end
+                                    if canFight then
+                                        break
+                                    end
+                                end
+                            end
+
+                            if canFight then
+                                table.insert(FORCE_MONSTERS, vGroup.contextualId)
+                            else
+                                table.insert(FORBIDDEN_MONSTERS, vGroup.contextualId)
+                            end
+                        end
+
+                        --Utils:Print("Min monsters = " .. MIN_MONSTERS)
+                        --Utils:Print("Max monsters = " .. MAX_MONSTERS)
+                        --Utils:Dump(FORCE_MONSTERS)
+
+                        if #FORCE_MONSTERS > 0 then
+                            local printLife = false
+                            while minPercentLifeBeforeFight > character:lifePointsP() do
+                                if not printLife then
+                                    Utils:Print("Régénération des PV avant combat !", "Combat")
+                                    printLife = true
+                                end
+                                global:delay(10)
+                            end
+                            map:fight()
+                        end
+                    end
+                else
+                    --Utils:Dump(GATHER)
+                    Action:Gather()
+                    --map:gather()
                 end
 
                 Movement:RoadZone(self.mapIdToRoad)
+
+                --Utils:Print("Apres RoadZone", "dev")
             end
         end
-    end
 
-    function Movement:RoadZone(tblMapId)
-        if tblMapId ~= nil and #tblMapId > 0 then
-            if map:currentMapId() == self.RZNextMapId or self.RZNextMapId == -1 then
+        Utils:Print("Fin move", "dev")
 
-                self.RZNextMapId = tblMapId[global:random(1, #tblMapId)]
-
-                if not map:loadMove(self.RZNextMapId) then
-                    Utils:Print("Impossible de charger un chemin jusqu'a la mapId : ("..self.RZNextMapId..") changement de map avant re tentative", "RoadZone", "warn")
-                end
-            end
-
-            if not self.tpZoneFarm then
-                if map:currentMap() == "0,0" then
-                    self.tpZoneFarm = true
-                    local nextMap = self.RZNextMapId
-                    self.RZNextMapId = -1
-                    self:UseZaap(nextMap)
-                else
-                    self:HavenBag()
-                end
-            end
-
-
-            self:MoveNext()
-
-            --Utils:Print("Apres MoveNext", "RoadZone")
-            self.RZNextMapId = -1
-            self:RoadZone(tblMapId)
-        else
-            Utils:Print("Table nil", "RoadZone", "error")
+        if not Craft.canCraft then
+            self.RoadLoaded = false
+            self.tpBank = false
+            self.tpZoneFarm = false
+            Craft.selectedItemToFarm = false
         end
     end
 
     function Movement:ConfigRoad()
         self.mapIdToRoad = {}
+        self.monsterDropItem = {}
         local mstrDrop = Monsters:GetMonsterIdByDropId(Craft.ItemsToDrop[Craft.currentIndexItemToDrop].itemId)
 
         local function getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
+            self.mapIdToRoad = {}
+            Utils:Print("Get rand subArea")
             if Utils:LenghtOfTable(self.logFarmedZone) > 10 then
                 table.remove(self.logFarmedZone, 11)
             end
@@ -244,16 +297,30 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
 
             for kSubAreaId, vMaps in pairs(subAreaContainsResToFarm) do
                 if i == rand then
+                    --Utils:Print(Utils:LenghtOfTable(subAreaContainsResToFarm), "dev")
+
                     if Utils:LenghtOfTable(subAreaContainsResToFarm) > 1 then
-                        for _, vLog in pairs(self.logFarmedZone) do
-                            if gatherIdToFarm == vLog.gatherId then
-                                if kSubAreaId == vLog.subAreaId then
+                        local iStep = 0
+                        --Utils:Print("Ici", "dev")
+
+                        for iLog = #self.logFarmedZone, 1, -1 do
+                            Utils:Print("logFarmedGatherId = " .. self.logFarmedZone[iLog].gatherId, "dev")
+                            Utils:Print("gatherIdToFarm = " .. gatherIdToFarm, "dev")
+                            if self.logFarmedZone[iLog].gatherId == gatherIdToFarm then
+                                Utils:Print("logFarmedSubAreaId = " .. self.logFarmedZone[iLog].subAreaId, "dev")
+                                Utils:Print("kSubAreaId = " .. kSubAreaId, "dev")
+
+                                if self.logFarmedZone[iLog].subAreaId == kSubAreaId then
                                     Utils:Print("Re rand")
                                     getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
-                                else
-                                    break
                                 end
                             end
+
+                            if iStep == math.ceil((#subAreaContainsResToFarm / 4) * 3) then
+                                break
+                            end
+
+                            iStep = iStep + 1
                         end
                     end
 
@@ -267,7 +334,7 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
                         end
                     end
 
-                    if countResInSubArea > 10 then
+                    if countResInSubArea > 10 and Utils:LenghtOfTable(subAreaContainsResToFarm) > 1 then
                         table.insert(self.logFarmedZone, { gatherId = gatherIdToFarm, subAreaId = kSubAreaId })
 
                         for _, vMap in pairs(vMaps) do
@@ -300,13 +367,13 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
                         local diffPercent = Math:DiffPercent(character:level(), monsterInfo.level)
 
                         if diffPercent >= 150 then
-                            MIN_MONSTERS = 4
+                            MIN_MONSTERS = 2
                             MAX_MONSTERS = 8
                         elseif diffPercent >= 100 then
-                            MIN_MONSTERS = 4
+                            MIN_MONSTERS = 2
                             MAX_MONSTERS = 6
                         elseif diffPercent >= 75 then
-                            MIN_MONSTERS = 3
+                            MIN_MONSTERS = 2
                             MAX_MONSTERS = 5
                         elseif diffPercent >= 50 then
                             MIN_MONSTERS = 2
@@ -322,7 +389,7 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
                             MAX_MONSTERS = 1
                         end
 
-                        table.insert(FORCE_MONSTERS, v)
+                        self.monsterDropItem = mstrDrop
 
                         self.mapIdToRoad = subAreaMapId
                         break
@@ -338,6 +405,9 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
             for k, v in pairs(GatherInfo) do
                 if v.objectId == Craft.ItemsToDrop[Craft.currentIndexItemToDrop].itemId then
                     if job:level(v.jobId) < v.minLvlToFarm then
+                        Utils:Print(job:level(v.jobId), "Dev")
+                        Utils:Print(v.minLvlToFarm, "Dev")
+                        global:delay(10000)
                         local possibleResFarm = {}
 
                         Utils:Print("Vous n'avez pas le niveau requis pour farm la ressouce " .. inventory:itemNameId(v.objectId), "Info")
@@ -355,6 +425,10 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
                                 maxLvl = vRes.minLvlToFarm
                                 gatherIdToFarm = vRes.gatherId
                             end
+                        end
+
+                        if gatherIdToFarm == 0 then
+                            Utils:Print("GatherIdToFarm = 0", "configroad")
                         end
 
                         table.insert(GATHER, gatherIdToFarm)
@@ -386,7 +460,127 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
         end
     end
 
+    function Movement:IsIncarnamMapId(mapId)
+        for _, v in pairs(Zone:GetAreaMapId(45)) do
+            if v == mapId then
+                return true
+            end
+        end
+        return false
+    end
+
+    function Movement:RoadZone(tblMapId)
+        if tblMapId ~= nil and #tblMapId > 0 then
+
+            if map:currentMapId() == self.RZNextMapId or self.RZNextMapId == -1 then
+                self.pathMineLoaded = false
+                self.RZNextMapId = tblMapId[global:random(1, #tblMapId)]
+
+                while self:AlreadyCrossedRZNextMapId(tblMapId, self.RZNextMapId) or self:ExcludeMapId(self.RZNextMapId) do
+                    --Utils:Print("Map AlreadyCrossed", "dev")
+                    self.RZNextMapId = tblMapId[global:random(1, #tblMapId)]
+                end
+
+                Utils:Print("RZNextMapId = " .. self.RZNextMapId, "dev")
+
+                table.insert(self.logRZNextMapId, self.RZNextMapId)
+
+                if #self.logRZNextMapId > 50 then
+                    table.remove(self.logRZNextMapId, 51)
+                end
+
+                --if not map:loadMove(self.RZNextMapId) then
+                    --Utils:Print("Impossible de charger un chemin jusqu'a la mapId : ("..self.RZNextMapId..") changement de map avant re tentative", "RoadZone", "warn")
+                --end
+            end
+
+            if not self.tpZoneFarm then
+                if self:MapDistance(map:currentMapId(), self.RZNextMapId) > 20 and not self:IsIncarnamMapId(self.RZNextMapId) then
+                    if map:currentMap() == "0,0" then
+                        self.tpZoneFarm = true
+                        local nextMap = self.RZNextMapId
+                        self.RZNextMapId = -1
+                        self:UseZaap(nextMap)
+                    else
+                        self:HavenBag()
+                    end
+                else
+                    self.tpZoneFarm = true
+                    if map:currentMap() == "0,0" then
+                        map:changeMap('havenbag')
+                    end
+                end
+            end
+
+            if self.tpZoneFarm then
+                if PathFinder:IsMine(self.RZNextMapId) and PathFinder:IsMine(map:currentMapId()) then
+                    if not self.pathMineLoaded then
+                        self.pathMine = PathFinder:LoadPathtoMapId(self.RZNextMapId)
+                        self.pathMineLoaded = true
+                    end
+                    PathFinder:MovePath(self.pathMine)
+                    global:delay(1000)
+                else
+                    for _ = 1, 10 do
+                        map:moveToward(self.RZNextMapId)
+                    end
+                end
+
+                if self.lastFailMapId == map:currentMapId() and self.countFailMoveNext > 100 then
+                    Craft.selectedItemToFarm = false
+                    self.RoadLoaded = false
+                    self.tpZoneFarm = false
+                    self.tpBank = false
+                    self.configRoad = false
+                    self.countFailMoveNext = 0
+                    self.lastFailMapId = 0
+                    self:HavenBag()
+                    self:Move()
+                end
+
+                self.lastFailMapId = map:currentMapId()
+                self.countFailMoveNext = self.countFailMoveNext + 1
+                self.RZNextMapId = -1
+            end
+
+            self:RoadZone(tblMapId)
+        else
+            Utils:Print("Table nil", "RoadZone", "error")
+        end
+    end
+
+    function Movement:AlreadyCrossedRZNextMapId(tblMapId, compareMap)
+        local iStep = 0
+
+        for i = #self.logRZNextMapId, 1, -1 do
+            --Utils:Print(self.logRZNextMapId[i])
+            --Utils:Print(compareMap)
+            --Utils:Print("--------------------")
+            if self.logRZNextMapId[i] == compareMap then
+                --Utils:Print("true")
+                return true
+            end
+
+            iStep = iStep + 1
+
+            if iStep == math.ceil((#tblMapId / 4) * 3) then
+                return false
+            end
+        end
+        return false
+    end
+
+    function Movement:ExcludeMapId(mapId)
+        for _, vMapId in pairs(self.excludeMapId) do
+            if mapId == vMapId then
+                return true
+            end
+        end
+        return false
+    end
+
     function Movement:Bank()
+        Craft.selectedItemToFarm = false
         Craft.checkPossibleCraft = false
         self.tpZoneFarm = false
         return self:Move()
@@ -458,17 +652,18 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
     function Movement:ClosestZaap(mapIdDest)
         local dist = 0
         local map = 0
-
         for _, v in pairs(self.zaapDestinations) do
+            --local mapDistance = map:GetPathDistance(mapIdDest, v.mapId)
+            local mapDistance = self:MapDistance(mapIdDest, v.mapId)
             if dist == 0 and v.cost < character:kamas() then
-                dist = self:MapDistance(mapIdDest, v.mapId)
+                dist = mapDistance
                 map = v.mapId
-            elseif self:MapDistance(mapIdDest, v.mapId) < dist and v.cost < character:kamas() then
-                dist = self:MapDistance(mapIdDest, v.mapId)
+            elseif mapDistance < dist and v.cost < character:kamas() then
+                dist = mapDistance
                 map = v.mapId
             end
         end
-        Utils:Print(map)
+        --Utils:Print(map)
 
         return map
     end
@@ -505,14 +700,210 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
         for _ = startY, endY, iStep do
             dist = dist + 1
         end
-
+        --Utils:Print("------------------------")
+        --Utils:Print(mapIdEnd)
+        --Utils:Print(dist)
+        --Utils:Print("------------------------")
         return dist
     end
 
     function CB_ZaapDestinations(packet)
+        Movement.zaapDestinations = {}
         for _, v in pairs(packet.destinations) do
             table.insert(Movement.zaapDestinations, v)
         end
+    end
+
+    -- Action
+
+    Action.statedElements = {}
+    Action.integereractiveElements = {}
+
+    Action.harvestableElements = {}
+
+    Action.bagsId = {
+        -- Paysan
+        7941,
+        7942,
+        7943,
+        7944,
+        7945,
+        7946,
+        7947,
+        7948,
+        7949,
+        11113,
+        16532,
+        16533,
+
+
+        -- Bucheron
+        7950,
+        7951,
+        7952,
+        7953,
+        7954,
+        7955,
+        7956,
+        7957,
+        7958,
+        7959,
+        7960,
+        7961,
+        7962,
+        7963,
+        7996,
+        8081,
+        11112,
+        16531,
+
+        -- Alchimiste
+
+        7964,
+        7965,
+        7966,
+        7967,
+        7968,
+        7969,
+        7970,
+        11103,
+        16528,
+        16529,
+        16530,
+        18059,
+        24041,
+
+        -- Mineur
+
+        7971,
+        7972,
+        7973,
+        7974,
+        7975,
+        7976,
+        7977,
+        7978,
+        7979,
+        7980,
+        7981,
+        11114,
+
+        -- Pecheur
+
+        7982,
+        7983,
+        7984,
+        7985,
+        7986,
+        7987,
+        7988,
+        7989,
+        7990,
+        7991,
+        7992,
+        7993,
+        7994,
+        7995,
+        11111,
+        16534,
+        16535,
+        16536,
+        16537,
+        16538,
+        16539,
+
+
+    }
+
+    function Action:Gather()
+        Packet:SubManager({ 
+            ["MapComplementaryInformationsDataMessage"] = CB_MapComplementaryInformations,
+        }, true)
+
+        local failMessage
+
+        developer:suspendScriptUntil("MapComplementaryInformationsDataMessage", 10, false, failMessage)
+
+        if failMessage then
+            Utils:Print(failMessage)
+        end
+
+        for _, vInteractive in pairs(self.integereractiveElements) do
+            if developer:typeOf(vInteractive) == "InteractiveElementWithAgeBonus" and vInteractive.onCurrentMap then
+                for _, vGather in pairs(GATHER) do
+                    if vGather == vInteractive.elementTypeId then
+                        table.insert(self.harvestableElements, { elementId = vInteractive.elementId })
+                        break
+                    end
+                end
+            end
+        end
+
+        for _, vHarvestableElement in pairs(self.harvestableElements) do
+            for _, vStatedElement in pairs(self.statedElements) do
+                if vHarvestableElement.elementId == vStatedElement.elementId then
+                    vHarvestableElement.cellId = vStatedElement.elementCellId
+                    break
+                end
+            end
+        end
+
+        for _, vHarvestableElement in pairs(self.harvestableElements) do
+            map:door(vHarvestableElement.cellId)
+        end
+
+        self.harvestableElements = {}
+    end
+
+    function Action:SortHarvestableElementsByDist()
+        for _, vHarvestableElement in pairs(self.harvestableElements) do
+            vHarvestableElement.dist = Utils:ManhattanDistanceCellId(map:currentCell(), vHarvestableElement.cellId)
+        end
+
+        table.sort(self.harvestableElements, function(a, b)
+            return a.dist < b.dist
+        end)
+
+        local iSort = 1
+
+        while true do
+            local minDist = 1000
+            local iModif = 1
+
+            if iSort == #self.harvestableElements then
+                self.harvestableElements[iSort].dist = 1000
+                break
+            end
+
+            for i, vHarvestableElement in ipairs(self.harvestableElements) do
+                local clcDist = Utils:ManhattanDistanceCellId(self.harvestableElements[iSort].cellId, vHarvestableElement.cellId)
+                if clcDist < minDist and clcDist ~= 0 then
+                    minDist = clcDist
+                    iModif = i
+                end
+            end
+
+            self.harvestableElements[iModif].dist = minDist
+
+            iSort = iSort + 1
+        end
+
+        table.sort(self.harvestableElements, function(a, b)
+            return a.dist > b.dist
+        end)
+    end
+
+    function Action:OpenBags()
+        for _, idBags in pairs(self.bagsId) do
+            while inventory:itemCount(idBags) > 0 do
+                inventory:useItem(idBags)
+            end
+        end
+    end
+
+    function CB_MapComplementaryInformations(packet)
+        Action.statedElements = packet.statedElements
+        Action.integereractiveElements = packet.integereractiveElements
     end
 
     -- Craft
@@ -525,6 +916,15 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
                 nbCraftBeforeNextCraft = 50,
                 maxCraftPerDay = 1000
             }
+        },
+        ["Mineur"] = {
+            {
+                craftName = "Aluminite",
+                craftId = 747,
+                nbCraftBeforeNextCraft = 50,
+                maxCraftPerDay = 1000,
+                toolType = "Fondre"
+            },
         }
     }
 
@@ -539,6 +939,7 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
     Craft.workshopInfoInitialized = false
     Craft.currentWorkshopMapId = 0
     Craft.currentWorkshopId = 0
+    Craft.toolType = ""
 
     Craft.currentCraft = {}
 
@@ -559,7 +960,7 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
             end
         end
 
-        if not self.canCraft then
+        if not self.canCraft and self.checkPossibleCraft then
             while not self.selectedItemToFarm do
                 if Utils:LenghtOfTable(self.ItemsToDrop) > 1 then
                     local rand = global:random(1, Utils:LenghtOfTable(self.ItemsToDrop))
@@ -591,18 +992,42 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
 
                     self.workshopInfoInitialized = true
                 else
-                    --A faire !!!
+                    for kToolType, vTbl in pairs(workshopInfo.workshopId) do
+                        if Utils:Equal(kToolType, self.currentCraft.toolType) then
+                            local rand = global:random(1, #vTbl)
+                            self.currentWorkshopId = vTbl[rand]
+                            self.workshopInfoInitialized = true
+                            break
+                        end
+                    end
+
+                    if not self.workshopInfoInitialized then
+                        Utils:Print("Aucun workshop trouvée !", "CraftManager", "error")
+                    end
                 end
             end
 
             if self.workshopInfoInitialized then
+                --Utils:Print("workshopInit, mapid = "..self.currentWorkshopMapId)
                 Movement:LoadRoad(self.currentWorkshopMapId)
 
                 if map:currentMapId() == self.currentWorkshopMapId then
                     map:useById(self.currentWorkshopId, -1)
+                    local nbCraftedItem = 0
 
-                    for _, vIngInfo in pairs(self.currentCraft.ingredients) do                       
+                    for _, vIngInfo in pairs(self.currentCraft.ingredients) do        
+                        nbCraftedItem = inventory:itemCount(vIngInfo.ingredientId) / vIngInfo.quantity
                         craft:putItem(vIngInfo.ingredientId, vIngInfo.quantity)
+                    end
+
+                    for kJob, vTblCraft in pairs(self.CraftInfo) do
+                        if Utils:Equal(Worker.currentJob, kJob) then
+                            for _, v in pairs(vTblCraft) do
+                                if v.craftId == self.currentCraft.craftId then
+                                    v.currentCraftedItems = v.currentCraftedItems + nbCraftedItem
+                                end
+                            end
+                        end
                     end
 
                     craft:changeQuantityToCraft(self:CalculMaxPossibleItemToCraft())
@@ -617,33 +1042,6 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
                 end
             end
         end
-    end
-
-    function Craft:CalculMaxPossibleItemToCraft()
-        local init = false
-        local maxItem = 0
-
-        for _, vIngInfo in pairs(self.currentCraft.ingredients) do
-            local tmp = inventory:itemCount(vIngInfo.ingredientId) / vIngInfo.quantity
-
-            if tmp == 0 then
-                tmp = exchange:storageItemQuantity(vIngInfo.ingredientId) / vIngInfo.quantity
-            end
-
-
-            if init then
-                maxItem = math.floor(tmp)
-            else
-                if tmp < maxItem then
-                    maxItem = math.floor(tmp)
-                end
-
-            end
-            init = true
-        end
-
-
-        return maxItem
     end
 
     function Craft:GetCurrentWorkShopInfo(area)
@@ -691,8 +1089,6 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
         for _, vIng in pairs(self.currentCraft.ingredients) do
             local maxItemInInventory = self:MaxPossibleItemInInventoryForCraft(self:CalculTotalWeightIng(self.currentCraft.ingredients), vIng.quantity)
 
-            maxItemInInventory = global:random(1, maxItemInInventory)
-
             if exchange:storageItemQuantity(vIng.ingredientId) < maxItemInInventory then
                 self.canCraft = false
                 local ins = {}
@@ -703,17 +1099,12 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
         end
 
         if self.canCraft then
-            local maxPossibleItemToCraft = self:CalculMaxPossibleItemToCraft()
-
-            Utils:Print(maxPossibleItemToCraft)
-
             for _, vIngInfo in pairs(self.currentCraft.ingredients) do
-                exchange:getItem(vIngInfo.ingredientId, vIngInfo.quantity * maxPossibleItemToCraft)
+                exchange:getItem(vIngInfo.ingredientId, self:MaxPossibleItemInInventoryForCraft(self:CalculTotalWeightIng(self.currentCraft.ingredients), vIngInfo.quantity))
             end
 
             Movement.podsMaxBeforeBank = 101
             Utils:Print("Can craft")
-
         else
             Movement.podsMaxBeforeBank = global:random(minPercentPodsBeforeBank, maxPercentPodsBeforeBank)
             Utils:Print("Prochain retour a la banque a " .. Movement.podsMaxBeforeBank .. "% pods", "Info")
@@ -731,6 +1122,33 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
         return weight
     end
 
+    function Craft:CalculMaxPossibleItemToCraft()
+        local init = false
+        local maxItem = 0
+
+        for _, vIngInfo in pairs(self.currentCraft.ingredients) do
+            local tmp = inventory:itemCount(vIngInfo.ingredientId) / vIngInfo.quantity
+
+            if tmp == 0 then
+                tmp = exchange:storageItemQuantity(vIngInfo.ingredientId) / vIngInfo.quantity
+            end
+
+
+            if init then
+                maxItem = math.floor(tmp)
+            else
+                if tmp < maxItem then
+                    maxItem = math.floor(tmp)
+                end
+
+            end
+            init = true
+        end
+
+
+        return maxItem
+    end
+
     function Craft:InitCraftProperties()
         for _, vTblCraft in pairs(self.CraftInfo) do
             for _, vCraft in pairs(vTblCraft) do
@@ -746,6 +1164,9 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
             if v.currentCraftedItems < v.nbCraftBeforeNextCraft and job:level(Craft:GetJobId(v.craftId)) >= Craft:GetLevel(v.craftId) then
                 local ret = Craft:GetCraftInfo(v.craftId)
                 ret.craftName = v.craftName
+                if v.toolType then
+                    ret.toolType = v.toolType
+                end
                 return ret
             end
         end
@@ -762,7 +1183,206 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
     end
 
     function Craft:MaxPossibleItemInInventoryForCraft(totalWeightIngCraft, nbIng)
+        --Utils:Print("totalWeight = " .. totalWeightIngCraft .. " nbIng = " .. nbIng)
         return ((math.round((inventory:podsMax() - inventory:pods()) - 100, 100)) / totalWeightIngCraft) * nbIng
+    end
+
+    -- PathFinder (mine)
+
+    PathFinder.changeMapInfo = {
+        -- Mine Hérale
+        ["97261059"] = {
+            mapId = 97261059,
+            moveMapInfo = {
+                { path =  417, toMapId = 97260033 }
+            }
+        },
+        ["97260033"] = {
+            mapId = 97260033,
+            moveMapInfo = {
+                { path =  405, toMapId = 97261057 },
+                { path =  183, toMapId = 97261059 },
+    
+            }
+        },
+        ["97261057"] = {
+            mapId = 97261057,
+            moveMapInfo = {
+                { path = 421, toMapId = 97259011 },
+                { path = 235, toMapId = 97255939 },
+                { path = 487, toMapId = 97257987 },
+                { path = 227, toMapId = 97260033 }
+            }
+        },
+        ["97259011"] = {
+            mapId = 97259011,
+            moveMapInfo = {
+                { path = 276, toMapId = 97261057 }
+            }
+        },
+        ["97255939"] = {
+            mapId = 97255939,
+            moveMapInfo = {
+                { path = 478, toMapId = 97261057 },
+                { path = 446, toMapId = 97256963 }
+            }
+        },
+        ["97256963"] = {
+            mapId = 97256963,
+            moveMapInfo = {
+                { path = 172, toMapId = 97255939 },
+                { path = 492, toMapId = 97257987 }
+            }
+        },
+        ["97257987"] = {
+            mapId = 97257987,
+            moveMapInfo = {
+                { path = 249, toMapId = 97256963 },
+                { path = 212, toMapId = 97261057 },
+                { path = 492, toMapId = 97260035 }
+            }
+        },
+        ["97260035"] = {
+            mapId = 97260035,
+            moveMapInfo = {
+                { path = 288, toMapId = 97257987 }
+            }
+        },
+        -- Mine Astirite
+        ["97261071"] = {
+            mapId = 97261071,
+            moveMapInfo = {
+                { path = 248, toMapId = 97260047 }
+            }
+        },
+        ["97260047"] = {
+            mapId = 97260047,
+            moveMapInfo = {
+                { path = 379, toMapId = 97261071 },
+                { path = 432, toMapId = 97257999 }
+            }
+        },
+        ["97257999"] = {
+            mapId = 97257999,
+            moveMapInfo = {
+                { path = 268, toMapId = 97260047 },
+                { path = 247, toMapId = 97259023 },
+                { path = 403, toMapId = 97256975 },
+            }
+        },
+        ["97259023"] = {
+            mapId = 97259023,
+            moveMapInfo = {
+                { path = 451, toMapId = 97257999 }
+            }
+        },
+        ["97256975"] = {
+            mapId = 97256975,
+            moveMapInfo = {
+                { path = 323, toMapId = 97257999 },
+                { path = 497, toMapId = 97255951 }
+            }
+        },
+        ["97255951"] = {
+            mapId = 97255951,
+            moveMapInfo = {
+                { path = 203, toMapId = 97256975 }
+            }
+        },
+        -- Mine porco 1
+        ["30670848"] = {
+            mapId = 30670848,
+            moveMapInfo = {
+                { path = 344, toMapId = 30671107 }
+            }
+        },
+        ["30671107"] = {
+            mapId = 30671107,
+            moveMapInfo = {
+                { path = 298, toMapId = 30670848 },
+                { path = 247, toMapId = 30671110 }
+            }
+        },
+        ["30671110"] = {
+            mapId = 30671110,
+            moveMapInfo = {
+                { path = 479, toMapId = 30671107 },
+                { path = 188, toMapId = 30671116 }
+            }
+        },
+        ["30671116"] = {
+            mapId = 30671116,
+            moveMapInfo = {
+                { path = 292, toMapId = 30671110 }
+            }
+        },
+    }
+
+    PathFinder.PFinit = false
+
+    function PathFinder:MovePath(path)
+        for _, v in pairs(path) do
+            if Utils:Equal(v.map, map:currentMapId()) then
+                if v.path then
+                    map:changeMap(v.path)
+                else
+                    map:door(v.door)
+                end
+            end
+        end
+    end
+
+    function PathFinder:LoadPathtoMapId(toMapId)
+        if not self.PFinit then
+            self:CreateGraph()
+            self.init = true
+        end
+        local dijkstra = Graph:NewDijkstra()
+        local pathToRet = {}
+        dijkstra:run(Graph.PFgraph, map:currentMapId())
+        local path = dijkstra:getPathTo(toMapId)
+
+        for i = 0,path:size()-1 do
+            table.insert(pathToRet, self:GetChangeMapInfo(path:get(i):from(), path:get(i):to()))
+            --Utils:Print('# from ' .. path:get(i):from() .. ' to ' .. path:get(i):to() .. ' ( distance: ' .. path:get(i).weight .. ' )')
+        end
+
+        return pathToRet
+    end
+
+    function PathFinder:GetChangeMapInfo(fromMapId, toMapId)
+        for _, vMap in pairs(self.changeMapInfo) do
+            if Utils:Equal(vMap.mapId, fromMapId) then
+                for _, vChangeMap in pairs(vMap.moveMapInfo) do
+                    if Utils:Equal(vChangeMap.toMapId, toMapId) then
+                        if vChangeMap.path then
+                            return { map = fromMapId, path = vChangeMap.path }
+                        else
+                            return { map = fromMapId, door = vChangeMap.door }
+                        end
+                    end
+                end
+            end
+        end
+        return nil
+    end
+
+    function PathFinder:IsMine(compareMap)
+        for _, vMap in pairs(self.changeMapInfo) do
+            if Utils:Equal(vMap.mapId, compareMap) then
+                return true
+            end
+        end
+        return false
+    end
+
+    function PathFinder:CreateGraph()
+        Graph.PFgraph = Graph:NewGraph(1, true)
+        for _, vMap in pairs(self.changeMapInfo) do
+            for _, vInfo in pairs(vMap.moveMapInfo) do
+                Graph.PFgraph:addEdge(vMap.mapId, vInfo.toMapId, 1.0) -- edge from 0 to 1 is 5.0 in distance
+            end
+        end
     end
 
     -- Worker
@@ -831,9 +1451,12 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
     Time.TimerMinuteStart = 0
     Time.TimerRandTimeToWait = 0
 
-    function Time:Timer()
+    function Time:Timer(min, max)
+        min = min or minMinutesOnFarmingZone
+        max = max or maxMinutesOnFarmingZone
+
         if not self.TimerInitialized then
-            self.TimerRandTimeToWait = global:random(minMinutesOnFarmingZone, maxMinutesOnFarmingZone)
+            self.TimerRandTimeToWait = global:random(min, max)
             Utils:Print("Changement de zone dans "..self.TimerRandTimeToWait.." minutes", "Timer")
             self.TimerHourStart, self.TimerMinuteStart = Utils:GenerateDateTime("h"), Utils:GenerateDateTime("m")
             self.TimerInitialized = true
@@ -870,6 +1493,21 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
     end
 
     -- Packet
+    function Packet:SubManager(packetToSub, register)
+        for kPacketName, vCallBack in pairs(packetToSub) do
+            if register then -- Abonnement au packet
+                if not developer:isMessageRegistred(kPacketName) then
+                    --Print("Abonnement au packet : "..packetName, "packet")
+                    developer:registerMessage(kPacketName, vCallBack)
+                end            
+            else -- Désabonnement des packet
+                if developer:isMessageRegistred(kPacketName) then
+                    --Print("Désabonnement du packet : "..packetName, "packet")
+                    developer:unRegisterMessage(kPacketName)
+                end
+            end
+        end
+    end
 
     function Packet:SendPacket(packetName, fn)
         Utils:Print("Envoie du packet "..packetName, "packet")
@@ -898,11 +1536,17 @@ Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
 -- Ankabot Main Func
 
 function move()
-    return Movement:Move()
+    while true do
+        Movement:Move()
+    end
 end
 
 function bank()
     return Movement:Bank()
+end
+
+function phenix()
+    Utils:Print("Votre personnage et en fantôme !", "Info")
 end
 
 function math.sign(v) -- Dependance de math.round
@@ -911,5 +1555,5 @@ end
 
 function math.round(v, bracket) -- Sert a arrondir un nombre
     bracket = bracket or 1
-    return math.floor(v/bracket + math.sign(v) * 0.5) * bracket
+    return math.floor(v/bracket) * bracket
 end
