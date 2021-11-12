@@ -1,228 +1,310 @@
+local currentDirectory = global:getCurrentScriptDirectory()
+
+Utils = require("lanes").configure()
 Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
 Movement = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Movement.lua")
+JSON = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\JSON.lua")
+Zone = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Zone.lua")
 
-PathFinder = {}
-
-function move()
-    if PathFinder:IsMine(97255939) then
-        PathFinder:MovePath(PathFinder:LoadPathtoMapId(97255939))
-    end
-    global:delay(1000)
-end
-
-PathFinder.changeMapInfo = {
-    -- Mine Hérale
-    ["97261059"] = {
-        mapId = 97261059,
-        moveMapInfo = {
-            { path =  417, toMapId = 97260033 }
-        }
-    },
-    ["97260033"] = {
-        mapId = 97260033,
-        moveMapInfo = {
-            { path =  405, toMapId = 97261057 },
-            { path =  183, toMapId = 97261059 },
-
-        }
-    },
-    ["97261057"] = {
-        mapId = 97261057,
-        moveMapInfo = {
-            { path = 421, toMapId = 97259011 },
-            { path = 235, toMapId = 97255939 },
-            { path = 487, toMapId = 97257987 },
-            { path = 227, toMapId = 97260033 }
-        }
-    },
-    ["97259011"] = {
-        mapId = 97259011,
-        moveMapInfo = {
-            { path = 276, toMapId = 97261057 }
-        }
-    },
-    ["97255939"] = {
-        mapId = 97255939,
-        moveMapInfo = {
-            { path = 478, toMapId = 97261057 },
-            { path = 446, toMapId = 97256963 }
-        }
-    },
-    ["97256963"] = {
-        mapId = 97256963,
-        moveMapInfo = {
-            { path = 172, toMapId = 97255939 },
-            { path = 492, toMapId = 97257987 }
-        }
-    },
-    ["97257987"] = {
-        mapId = 97257987,
-        moveMapInfo = {
-            { path = 249, toMapId = 97256963 },
-            { path = 212, toMapId = 97261057 },
-            { path = 492, toMapId = 97260035 }
-        }
-    },
-    ["97260035"] = {
-        mapId = 97260035,
-        moveMapInfo = {
-            { path = 288, toMapId = 97257987 }
-        }
-    },
+RC_CHANGE_TYPE_ENUM = {
+	UNKNOWN = 0,
+	NORMAL = 1,
+	WALK = 2,
+	INTERACTIVE = 3,
+	ZAAP = 4,
+	ZAAPI = 5,
+	HAVENBAG = 6
 }
 
-PathFinder.logTestedPath = {}
-PathFinder.trashPath = {}
-PathFinder.excludeMapId = {}
+RC_LAST_CHANGE_TYPE = RC_CHANGE_TYPE_ENUM.UNKNOWN
+RC_LAST_CELL_ID = map:currentCell()
+RC_LAST_INTERACTIVE_CELLID = 0
+RC_LAST_MAP_ID = map:currentMapId()
+RC_LAST_MAP_X = map:getX(map:currentMapId())
+RC_LAST_MAP_Y = map:getY(map:currentMapId())
+RC_FILENAME = "Road_"..os.time(os.date("!*t"))..".lua"
+RC_DIRECTION = ""
 
-PathFinder.pathBeingBuilt = {}
+Mapper = {}
+Mapper.initialized = false
+Mapper.zoneToMap = {}
+Mapper.mapToSave = map:currentMapId()
 
-PathFinder.iGetMap = 0
+Mapper.finishMapped = true
 
-function PathFinder:MovePath(path)
-    for _, v in pairs(path) do
-        if Utils:Equal(v.fromMapId, map:currentMapId()) then
-            map:changeMap(v.path)
-        end
+Mapper.inCurrentMapToMap = false
+
+RC_INCLUDE_CELLID = false
+
+BannedMapId = {}
+
+function move()
+    if not Mapper.initialized then
+        developer:registerMessage("ChangeMapMessage", CB_ChangeMapMessage)
+        developer:registerMessage("MapComplementaryInformationsDataInHavenBagMessage", newMapAction)
+        developer:registerMessage("MapComplementaryInformationsDataInHouseMessage", newMapAction)
+        developer:registerMessage("MapComplementaryInformationsDataMessage", newMapAction)
+        developer:registerMessage("MapComplementaryInformationsAnomalyMessage", newMapAction)
+        developer:registerMessage("MapComplementaryInformationsBreachMessage", newMapAction)
+        developer:registerMessage("MapComplementaryInformationsWithCoordsMessage", newMapAction)
+        Mapper.initialized = true
     end
+
+    Mapper:ZoneMapper()
 end
 
-function PathFinder:LoadPathtoMapId(toMapId)
-    local fromMapId = map:currentMapId()
+function Mapper:ZoneMapper()
+    local mapsDirection = JSON.decode(Utils:ReadFile(currentDirectory .. "\\mapsDirection.json"))
 
-    while true do
-        local nextMap = self:FindNextMap(fromMapId)
+    if #self.zoneToMap < 1 then
+        self.zoneToMap = Zone:GetAreaMapId(18)
+    end
 
-        if nextMap then
-            self.iGetMap = self.iGetMap + 1
-            table.insert(self.pathBeingBuilt, nextMap)
-            if nextMap.toMapId == toMapId then
-                local ret = self.pathBeingBuilt
-                self.pathBeingBuilt = {}
-                self.trashPath = {}
-                self.logTestedPath = {}
-                self.iGetMap = 0
-                return ret
-            end
-            fromMapId = nextMap.toMapId
-            --Utils:Dump(self.pathBeingBuilt, 50)
+    if self.finishMapped then
+        self:GetNextMap(mapsDirection)
+    end
+
+    if map:currentMapId() == self.mapToSave then
+        self.inCurrentMapToMap = true
+    else
+        self.inCurrentMapToMap = false
+    end
+
+    if not self.inCurrentMapToMap then
+        Utils:Print("Move to "..self.mapToSave)
+        map:moveToward(self.mapToSave)
+        table.insert(BannedMapId, self.mapToSave)
+        self.finishMapped = true
+    else
+        local nextNeighbourId = self:GetNextNeighbourId(mapsDirection)
+
+        if nextNeighbourId ~= -1 then
+            Utils:Print("Move to "..nextNeighbourId)
+            map:moveToward(nextNeighbourId)
+            table.insert(BannedMapId, self.mapToSave)
+            self.finishMapped = true    
         else
-            local trashPath = { iFail = self.iGetMap, path = self.pathBeingBuilt }
-            self.iGetMap = 0
-            fromMapId = map:currentMapId()
-            table.insert(self.trashPath, trashPath)
-            self.pathBeingBuilt = {}
-            --Utils:Print("--------------------------------")
-        end
-    end
-end
-
-function PathFinder:FindNextMap(fromMapId)
-    --Utils:Print("FindNextMap fromMapId = " .. fromMapId .. " toMapId = " .. toMapId)
-    --global:delay(100)
-
-    for _, vMapInfo in pairs(self.changeMapInfo) do
-        if vMapInfo.mapId == fromMapId then
-            local possibility = Utils:LenghtOfTable(vMapInfo.moveMapInfo)
-
-            vMapInfo.moveMapInfo = Utils:ShuffleTbl(vMapInfo.moveMapInfo)
-
-            for i, vMap in ipairs(vMapInfo.moveMapInfo) do
-                if not self:IsHalfTurn(vMap.toMapId) and not self:IsLoop(vMap.toMapId) and not self:IsExcludeMapId(vMap.toMapId) then
-                    if not self:PossibilityReached(vMap.toMapId) and not self:CheckTrashPath(vMap.toMapId, self.iGetMap)  then
-                        self:LogMap(fromMapId, vMap.toMapId, possibility)
-                        return { fromMapId = fromMapId, toMapId = vMap.toMapId, path = vMap.path }
-                    else
-                    end
-                elseif not self:CheckTrashPath(vMap.toMapId, self.iGetMap) then
-                    self:LogMap(fromMapId, vMap.toMapId, possibility)
-                end
+            Utils:Print("FinishedMap")
+            if mapsDirection[map:currentMapId()..""] == nil then
+                mapsDirection[map:currentMapId()..""] = {}
             end
-
-            table.insert(self.excludeMapId, fromMapId)
+            mapsDirection[map:currentMapId()..""].fullMaped = true
+            self.finishMapped = true
+            local mapsDirectionEncode = JSON.encode(mapsDirection)
+            local mapsDirectionFile = io.open(currentDirectory .. "\\mapsDirection.json", "w")
+            mapsDirectionFile:write(mapsDirectionEncode)
+            mapsDirectionFile:close()
         end
     end
-    return nil
+    self:ZoneMapper()
 end
 
-function PathFinder:LogMap(fromMapId, toMapId, possibility)
-    fromMapId, toMapId = tostring(fromMapId), tostring(toMapId)
-
-    if self.logTestedPath[fromMapId] == nil then
-        --Utils:Print("new log "..fromMapId)
-        self.logTestedPath[fromMapId] = { fromMapId = fromMapId, toMapId = toMapId, possibility = possibility, usedPossibility = 0 }
-    end
-
-    if self:PossibilityReached(toMapId) or possibility == 1 and not (map:currentMapId() == fromMapId and possibility == 1) then
-        --Utils:Print("usedPossibility for "..fromMapId.." +1")
-        self.logTestedPath[fromMapId].usedPossibility = self.logTestedPath[fromMapId].usedPossibility + 1
-    elseif possibility == 1 and not (map:currentMapId() == fromMapId and possibility == 1) then
-        --Utils:Print("Dans le elseIf "..fromMapId)
-        self.logTestedPath[fromMapId].usedPossibility = self.logTestedPath[fromMapId].usedPossibility + 1
-    end
-end
-
-function PathFinder:PossibilityReached(toMapId)
-    for _, v in pairs(self.logTestedPath) do
-        if Utils:Equal(v.fromMapId, toMapId) then
-            if v.usedPossibility >= v.possibility then
-                --Utils:Print(toMapId .. " Possibility reached")
-                return true
-            end
-        end
-    end
-    return false
-end
-
-function PathFinder:IsExcludeMapId(mapId)
-    for _, v in pairs(self.excludeMapId) do
+function isBannedMap(mapId)
+    for _, v in pairs(BannedMapId) do
         if Utils:Equal(v, mapId) then
-            --Utils:Print(mapId .. "  exclude")
             return true
         end
     end
     return false
 end
 
-function PathFinder:IsHalfTurn(toMapId)
-    local lenght = #self.pathBeingBuilt
+function printXY(mapId)
+    Utils:Print("Pos de " .. mapId .. " = [" .. map:getX(mapId) .. "," .. map:getY(mapId) .. "]")
+end
 
-    if lenght > 0 and self.pathBeingBuilt[lenght].fromMapId == toMapId then
-        --Utils:Print(toMapId .. "  is halfTurn")
+function Mapper:GetNextNeighbourId(mapsDirection)
+    local neighbourId = { map:neighbourId("top"), map:neighbourId("bottom"), map:neighbourId("right"), map:neighbourId("left") }
+
+    for _, vNeighbourId in pairs(neighbourId) do
+        if vNeighbourId ~= 0 and neighbourMapExist(vNeighbourId) then
+            local toNext = true
+            if mapsDirection[map:currentMapId()..""] ~= nil then
+                for _, v in pairs(mapsDirection[map:currentMapId()..""]) do
+                    if v.toMapId == vNeighbourId  then
+                        toNext = false
+                    end
+                end
+            end
+
+            if toNext then
+                return vNeighbourId
+            end
+        end
+    end
+    return -1
+end
+
+function Mapper:GetNextMap(mapsDirection)
+    for _, vZoneMap in pairs(self.zoneToMap) do
+        Utils:Print(mapExist(vZoneMap))
+        if mapExist(vZoneMap) and not isBannedMap(vZoneMap) then
+            local fundMap = true
+            for kMap, vMap in pairs(mapsDirection) do
+                if Utils:Equal(kMap, vZoneMap) then
+                    if vMap.fullMaped then
+                        fundMap = false
+                        break
+                    end
+                end
+            end
+
+            if fundMap then
+                Utils:Print("Map to save "..vZoneMap)
+                self.mapToSave = vZoneMap
+                self.finishMapped = false
+                break
+            end
+        end
+    end
+end
+
+function newMapAction(message)
+    local mapsDirection = JSON.decode(Utils:ReadFile(currentDirectory .. "\\mapsDirection.json"))
+
+	-- Extraire les coordonnées de la carte actuelle
+	local CurrentMapX = map:getX(message.mapId)
+	local CurrentMapY = map:getY(message.mapId)
+	local CurrentMapID = message.mapId
+
+    if mapsDirection[CurrentMapID..""] == nil then
+        mapsDirection[CurrentMapID..""] = {}
+    end
+
+    if mapsDirection[RC_LAST_MAP_ID..""] == nil then
+        Utils:Print("New map entry !")
+        mapsDirection[RC_LAST_MAP_ID..""] = {}
+    end
+
+	-- Havre sac ?
+	if tostring(message) == "SwiftBot.MapComplementaryInformationsDataInHavenBagMessage" then
+		RC_LAST_CHANGE_TYPE = RC_CHANGE_TYPE_ENUM.HAVENBAG
+	end
+
+	if RC_LAST_CHANGE_TYPE == RC_CHANGE_TYPE_ENUM.NORMAL then
+
+		if (RC_LAST_MAP_X + 1) == CurrentMapX then
+			RC_DIRECTION = "right"
+		elseif (RC_LAST_MAP_X - 1) == CurrentMapX then
+			RC_DIRECTION = "left"
+		elseif (RC_LAST_MAP_Y + 1) == CurrentMapY then
+			RC_DIRECTION = "bottom"
+		elseif (RC_LAST_MAP_Y - 1) == CurrentMapY then
+			RC_DIRECTION = "top"
+		end
+
+        global:printSuccess("Direction du déplacement: "..RC_DIRECTION)
+
+		if RC_INCLUDE_CELLID then
+		   	--roadFile:write("	"..comment.."{ map = \""..RC_LAST_MAP_ID.."\""..FIGHT_OPTION..GATHER_OPTION..RC_CUSTOM..", path = \""..RC_DIRECTION.."("..RC_LAST_CELL_ID..")\", done = false },\n}")
+		else
+            if mapsDirection[RC_LAST_MAP_ID..""][CurrentMapID..""] == nil then
+                Utils:Print("New direction for " .. RC_LAST_MAP_ID)
+                mapsDirection[RC_LAST_MAP_ID..""][CurrentMapID..""] = {}
+                mapsDirection[RC_LAST_MAP_ID..""][CurrentMapID..""].toMapId = CurrentMapID
+                mapsDirection[RC_LAST_MAP_ID..""][CurrentMapID..""].mapId = RC_LAST_MAP_ID
+                mapsDirection[RC_LAST_MAP_ID..""][CurrentMapID..""].path = RC_DIRECTION
+            end
+		end
+	elseif RC_LAST_CHANGE_TYPE == RC_CHANGE_TYPE_ENUM.INTERACTIVE then
+        global:printSuccess("Changement de map par l'utilisation d'un objet interactif.")
+        if mapsDirection[RC_LAST_MAP_ID..""][CurrentMapID..""] == nil then
+            Utils:Print("New direction for " .. RC_LAST_MAP_ID)
+            mapsDirection[RC_LAST_MAP_ID..""][CurrentMapID..""] = {}
+            mapsDirection[RC_LAST_MAP_ID..""][CurrentMapID..""].toMapId = CurrentMapID
+            mapsDirection[RC_LAST_MAP_ID..""][CurrentMapID..""].mapId = RC_LAST_MAP_ID
+            mapsDirection[RC_LAST_MAP_ID..""][CurrentMapID..""].door = RC_LAST_INTERACTIVE_CELLID
+        end
+	elseif RC_LAST_CHANGE_TYPE == RC_CHANGE_TYPE_ENUM.WALK then
+        global:printSuccess("Changement de map par le déplacement sur une cellule.")
+        if mapsDirection[RC_LAST_MAP_ID..""][CurrentMapID..""] == nil then
+            Utils:Print("New direction for " .. RC_LAST_MAP_ID)
+            mapsDirection[RC_LAST_MAP_ID..""][CurrentMapID..""] = {}
+            mapsDirection[RC_LAST_MAP_ID..""][CurrentMapID..""].toMapId = CurrentMapID
+            mapsDirection[RC_LAST_MAP_ID..""][CurrentMapID..""].mapId = RC_LAST_MAP_ID
+            mapsDirection[RC_LAST_MAP_ID..""][CurrentMapID..""].door = RC_LAST_CELL_ID
+        end
+	elseif RC_LAST_CHANGE_TYPE == RC_CHANGE_TYPE_ENUM.HAVENBAG then
+        global:printSuccess("Changement de map par une téléportation au havre sac.")
+
+	elseif RC_LAST_CHANGE_TYPE == RC_CHANGE_TYPE_ENUM.ZAAP then
+        global:printSuccess("Changement de map par l'utilisation d'un zaap.")
+	elseif RC_LAST_CHANGE_TYPE == RC_CHANGE_TYPE_ENUM.ZAAPI then
+        global:printSuccess("Changement de map par l'utilisation d'un zaapi.")
+		-- Ecriture dans le fichier
+        if mapsDirection[RC_LAST_MAP_ID..""][CurrentMapID..""] == nil then
+            Utils:Print("New direction for " .. RC_LAST_MAP_ID)
+            mapsDirection[RC_LAST_MAP_ID..""][CurrentMapID..""] = {}
+            mapsDirection[RC_LAST_MAP_ID..""][CurrentMapID..""].toMapId = CurrentMapID
+            mapsDirection[RC_LAST_MAP_ID..""][CurrentMapID..""].mapId = RC_LAST_MAP_ID
+            mapsDirection[RC_LAST_MAP_ID..""][CurrentMapID..""].zaapi = CurrentMapID
+        end
+
+	elseif RC_LAST_CHANGE_TYPE == RC_CHANGE_TYPE_ENUM.UNKNOWN then
+        global:printSuccess("Changement de map par une autre méthode.")
+	end
+
+    local mapsDirectionEncode = JSON.encode(mapsDirection)
+    local mapsDirectionFile = io.open(currentDirectory .. "\\mapsDirection.json", "w")
+    mapsDirectionFile:write(mapsDirectionEncode)
+    mapsDirectionFile:close()
+
+	-- Reset
+	RC_LAST_CHANGE_TYPE = RC_CHANGE_TYPE_ENUM.UNKNOWN
+
+	-- Sauvegarder
+	RC_LAST_MAP_X = CurrentMapX
+	RC_LAST_MAP_Y = CurrentMapY
+	RC_LAST_MAP_ID = CurrentMapID
+
+	-- Cellule d'entrée à une nouvelle map
+	for _, actor in ipairs(message.actors) do
+	    if message.actors[_].name == character:name() then
+	        RC_LAST_CELL_ID = message.actors[_].disposition.cellId
+	        global:printSuccess("Votre cellule dans la nouvelle map est: "..RC_LAST_CELL_ID)
+	        break
+	    end
+	end
+end
+
+function CB_ChangeMapMessage(packet)
+	RC_LAST_CHANGE_TYPE = RC_CHANGE_TYPE_ENUM.NORMAL
+	if packet.mapId == map:neighbourId("top") then
+		RC_DIRECTION = "top"
+	elseif packet.mapId == map:neighbourId("left") then
+		RC_DIRECTION = "left"
+	elseif packet.mapId == map:neighbourId("right") then
+		RC_DIRECTION = "right"
+	elseif packet.mapId == map:neighbourId("bottom") then
+		RC_DIRECTION = "bottom"
+	else
+		RC_DIRECTION = "unknown"
+	end
+end
+
+function neighbourMapExist(mapId)
+    local mapJson = JSON.decode(Utils:ReadFile(currentDirectory .. "\\PF_Maps\\" .. map:currentMapId() .. ".json"))
+
+    Utils:Print(mapJson.topNeighbourId)
+    Utils:Print(mapJson.bottomNeighbourId)
+    Utils:Print(mapJson.leftNeighbourId)
+    Utils:Print(mapJson.rightNeighbourId)
+
+    if Utils:Equal(mapJson.topNeighbourId, mapId) then
+        return true
+    elseif Utils:Equal(mapJson.bottomNeighbourId, mapId) then
+        return true
+    elseif Utils:Equal(mapJson.leftNeighbourId, mapId) then
+        return true
+    elseif Utils:Equal(mapJson.rightNeighbourId, mapId) then
         return true
     end
     return false
 end
 
-function PathFinder:CheckTrashPath(toMapId, iMap)
-    for _, vTrash in pairs(self.trashPath) do
-        if Utils:Equal(vTrash.iFail, iMap) then
-            if Utils:Equal(vTrash.path[#vTrash.path].fromMapId, toMapId) then
-                --Utils:Print(toMapId .. "  is trashPath")
-
-                return true
-            end
-        end
-    end
-    return false
-end
-
-function PathFinder:IsLoop(toMapId)
-    for _, v in pairs(self.pathBeingBuilt) do
-        if Utils:Equal(v.fromMapId, toMapId) then
-            --Utils:Print(toMapId .. "  is loop")
-            return true
-        end
-    end
-
-    return false
-end
-
-function PathFinder:IsMine(compareMap)
-    for _, vMap in pairs(self.changeMapInfo) do
-        if Utils:Equal(vMap.mapId, compareMap) then
-            return true
-        end
+function mapExist(mapId)
+    local mapJson = JSON.decode(Utils:ReadFile(currentDirectory .. "\\PF_Maps\\" .. mapId .. ".json"))
+    if mapJson then
+        return true
     end
     return false
 end

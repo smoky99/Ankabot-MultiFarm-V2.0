@@ -1,124 +1,20 @@
--- Parametre utilisateur
-local minMinutesOnFarmingZone, maxMinutesOnFarmingZone = 3, 5
-local minPercentPodsBeforeBank, maxPercentPodsBeforeBank = 70, 90
-
-local minPercentLifeBeforeFight = 80
-
-local WORKTIME_JOB = {
-    ["Lundi"] = {
-        { startTime = "05:14", finishTime = "23:59", job = "Mineur" },
-    },
-    ["Mardi"] = {
-        { startTime = "06:07", finishTime = "23:50", job = "Mineur" }
-    },
-    ["Mercredi"] = {
-        { startTime = "06:00", finishTime = "23:45", job = "Bricoleur" },
-    },
-    ["Jeudi"] = {
-        { startTime = "02:10", finishTime = "23:50", job = "Bricoleur" },
-        { startTime = "19:50", finishTime = "19:55", job = "Chasse au trésor" },
-        { startTime = "13:13", finishTime = "13:14", job = "" }
-    },
-    ["Vendredi"] = {
-        { startTime = "06:00", finishTime = "23:59", job = "Bricoleur" },
-
-    },
-    ["Samedi"] = {
-        { startTime = "06:00", finishTime = "23:59", job = "Bricoleur" }
-    },
-    ["Dimanche"] = {
-        { startTime = "00:02", finishTime = "23:50", job = "Bricoleur" },
-        { startTime = "03:22", finishTime = "07:12", job = "Pause" },
-        { startTime = "07:12", finishTime = "10:14", job = "Alchimiste" },
-        { startTime = "10:14", finishTime = "12:04", job = "Alchimiste" },
-        { startTime = "12:04", finishTime = "13:12", job = "Pause" },
-        { startTime = "13:12", finishTime = "15:22", job = "Bucheron" },
-        { startTime = "15:22", finishTime = "17:43", job = "Mineur" },
-        { startTime = "17:43", finishTime = "20:58", job = "Alchimiste" },
-        { startTime = "20:58", finishTime = "23:22", job = "Bucheron" },
-        { startTime = "23:22", finishTime = "05:12", job = "Pause" }
-    }
-}
-
--- Ankabot Params
+-- Ankabot Params 133432578
 GATHER = {}
 
 MIN_MONSTERS, MAX_MONSTERS = 1, 8
 FORBIDDEN_MONSTERS, FORCE_MONSTERS = {}, {}
 
-
-local GatherInfo = {
-    -- Bucheron
-    Frene =  { name = "Frêne", gatherId = 1, objectId = 303, jobId = 2, minLvlToFarm = 1 },
-    Chataignier =  { name = "Châtaignier", gatherId = 33, objectId = 473, jobId = 2, minLvlToFarm = 20 },
-    Noyer = { name = "Noyer", gatherId = 34, objectId = 476, jobId = 2, minLvlToFarm = 40 },
-    Chene = { name = "Chêne", gatherId = 8, objectId = 460, jobId = 2, minLvlToFarm = 60 },
-    Bombu = { name = "Bombu", gatherId = 98, objectId = 2358, jobId = 2, minLvlToFarm = 70 },
-    Erable = { name = "Erable", gatherId = 31, objectId = 471, jobId = 2, minLvlToFarm = 80 },
-    Oliviolet = { name = "Oliviolet", gatherId = 101, objectId = 2357, jobId = 2, minLvlToFarm = 90 },
-    If = { name = "If", gatherId = 28, objectId = 461, jobId = 2, minLvlToFarm = 100 },
-    Bambou = { name = "Bambou", gatherId = 108, objectId = 7013, jobId = 2, minLvlToFarm = 110 },
-    Merisier = { name = "Merisier", gatherId = 35, objectId = 474, jobId = 2, minLvlToFarm = 120 },
-    Noisetier = { name = "Noisetier", gatherId = 259, objectId = 16488, jobId = 2, minLvlToFarm = 130 },
-    Ebene = { name = "Ebène", gatherId = 29, objectId = 449, jobId = 2, minLvlToFarm = 140 },
-    Kaliptus = { name = "Kaliptus", gatherId = 121, objectId = 7925, jobId = 2, minLvlToFarm = 150 },
-    Charme = { name = "Charme", gatherId = 32, objectId = 472, jobId = 2, minLvlToFarm = 160 },
-    BambouSombre = { name = "Bambou Sombre", gatherId = 109, objectId = 7016, jobId = 2, minLvlToFarm = 170 },
-    Orme = { name = "Orme", gatherId = 30, objectId = 470, jobId = 2, minLvlToFarm = 180 },
-    BambouSacre = { name = "Bambou Sacré", gatherId = 110, objectId = 7014, jobId = 2, minLvlToFarm = 190 },
-    Tremble = { name = "Tremble", gatherId = 133, objectId = 11107, jobId = 2, minLvlToFarm = 200 },
-    -- Alchimiste
-    Ortie = { name = "Ortie", gatherId = 254, objectId = 421, jobId = 26, minLvlToFarm = 1 },
-    Sauge = { name = "Sauge", gatherId = 255, objectId = 428, jobId = 26, minLvlToFarm = 20 },
-    Trefle = { name = "Trèfle à 5 feuilles", gatherId = 67, objectId = 395, jobId = 26, minLvlToFarm = 40 },
-    MentheSauvage = { name = "Menthe Sauvage", gatherId = 66, objectId = 380, jobId = 26, minLvlToFarm = 60 },
-    OrchideeFreyesque = { name = "Orchidée Freyesque", gatherId = 68, objectId = 593, jobId = 26, minLvlToFarm = 80 },
-    Edelweiss = { name = "Edelweiss", gatherId = 61, objectId = 594, jobId = 26, minLvlToFarm = 100 },
-    Pandouille = { name = "Graine de pandouille", gatherId = 112, objectId = 7059, jobId = 26, minLvlToFarm = 120 },
-    Ginseng = { name = "Ginseng", gatherId = 256, objectId = 16385, jobId = 26, minLvlToFarm = 140 },
-    Belladone = { name = "Belladone", gatherId = 257, objectId = 16387, jobId = 26, minLvlToFarm = 160 },
-    Mandragore = { name = "Mandragore", gatherId = 258, objectId = 16389, jobId = 26, minLvlToFarm = 180 },
-    PerceNeige = { name = "Perce-Neige", gatherId = 131, objectId = 11102, jobId = 26, minLvlToFarm = 200 },
-    Salikrone = { name = "Salikrone", gatherId = 288, objectId = 17992, jobId = 26, minLvlToFarm = 200 },
-    TulipeEnPapier = { name = "Tulipe en papier", gatherId = 364, objectId = 23824, jobId = 26, minLvlToFarm = 200 },
-    -- Mineur
-    Fer = { name = "Fer", gatherId = 17, objectId = 312, jobId = 24, minLvlToFarm = 1 },
-    Cuivre = { name = "Cuivre", gatherId = 53, objectId = 441, jobId = 24, minLvlToFarm = 20 },
-    Bronze = { name = "Bronze", gatherId = 55, objectId = 442, jobId = 24, minLvlToFarm = 40 },
-    Kobalte = { name = "Kobalte", gatherId = 37, objectId = 443, jobId = 24, minLvlToFarm = 60 },
-    Manganese = { name = "Manganèse", gatherId = 54, objectId = 445, jobId = 24, minLvlToFarm = 80 },
-    Etain = { name = "Etain", gatherId = 52, objectId = 444, jobId = 24, minLvlToFarm = 100 },
-    Silicate = { name = "Silicate", gatherId = 114, objectId = 7032, jobId = 24, minLvlToFarm = 100 },
-    Argent = { name = "Argent", gatherId = 24, objectId = 350, jobId = 24, minLvlToFarm = 120 },
-    Bauxite = { name = "Bauxite", gatherId = 26, objectId = 446, jobId = 24, minLvlToFarm = 140 },
-    Or = { name = "Or", gatherId = 25, objectId = 313, jobId = 24, minLvlToFarm = 160 },
-    Dolomite = { name = "Dolomite", gatherId = 113, objectId = 7033, jobId = 24, minLvlToFarm = 180 },
-    Obsidienne = { name = "Obsidienne", gatherId = 135, objectId = 11110, jobId = 24, minLvlToFarm = 200 },
-    -- Paysan
-    Ble = { name = "Blé", gatherId = 38, objectId = 289, jobId = 28, minLvlToFarm = 1 },
-    Orge = { name = "Orge", gatherId = 43, objectId = 400, jobId = 28, minLvlToFarm = 20 },
-    Avoine = { name = "Avoine", gatherId = 45, objectId = 533, jobId = 28, minLvlToFarm = 40 },
-    Houblon = { name = "Houblon", gatherId = 39, objectId = 401, jobId = 28, minLvlToFarm = 60 },
-    Lin = { name = "Lin", gatherId = 42, objectId = 423, jobId = 28, minLvlToFarm = 80 },
-    Riz = { name = "Riz", gatherId = 111, objectId = 7018, jobId = 28, minLvlToFarm = 100 },
-    Seigle = { name = "Seigle", gatherId = 44, objectId = 532, jobId = 28, minLvlToFarm = 100 },
-    Malt = { name = "Malt", gatherId = 47, objectId = 405, jobId = 28, minLvlToFarm = 120 },
-    Chanvre = { name = "Chanvre", gatherId = 46, objectId = 425, jobId = 28, minLvlToFarm = 140 },
-    Mais = { name = "Maïs", gatherId = 260, objectId = 16454, jobId = 28, minLvlToFarm = 160 },
-    Millet = { name = "Millet", gatherId = 261, objectId = 16456, jobId = 28, minLvlToFarm = 180 },
-    Frostiz = { name = "Frostiz", gatherId = 134, objectId = 11109, jobId = 28, minLvlToFarm = 200 },
-    -- Autres
-    Puits = { name = "Puits", gatherId = 84, objectId = 311, jobId = 2, minLvlToFarm = 1 }
-}
-
 local bankMapId = 192415750
 
+Config = dofile(global:getCurrentScriptDirectory() .. "\\Multi_Config.lua")
+Info = dofile(global:getCurrentScriptDirectory() .. "\\Multi_Info.lua")
 Zone = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Zone.lua")
 Monsters = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Monsters.lua")
-Movement = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Movement.lua")
 Craft = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Craft.lua")
 Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
 Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
+Movement = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Movement.lua")
+Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_HavenBag.lua")
 
 -- Classes
 
@@ -161,7 +57,10 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
     Movement.pathMineLoaded = false
     Movement.pathMine = {}
 
+    Movement.iZaapOpen = false
+
     function Movement:Move()
+        Packet:SubManager({["ZaapDestinationsMessage"] = CB_ZaapDestinations, ["LeaveDialogMessage"] = CB_LeaveDialogMessage}, true)
         self.inBank = false
 
         if inventory:podsP() >= self.podsMaxBeforeBank then
@@ -206,8 +105,10 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
                         self.configRoad = false
                         self.tpZoneFarm = false
                         self.RZNextMapId = -1
+                        self.mapIdToRoad = {}
+                        self.pathMine = {}
                         Craft.selectedItemToFarm = false
-                        self:Move()
+                        return self:Move()
                     end
                 end
 
@@ -247,7 +148,7 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
 
                         if #FORCE_MONSTERS > 0 then
                             local printLife = false
-                            while minPercentLifeBeforeFight > character:lifePointsP() do
+                            while Config.minPercentLifeBeforeFight > character:lifePointsP() do
                                 if not printLife then
                                     Utils:Print("Régénération des PV avant combat !", "Combat")
                                     printLife = true
@@ -269,24 +170,34 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
             end
         end
 
+
         Utils:Print("Fin move", "dev")
 
         if not Craft.canCraft then
-            self.RoadLoaded = false
-            self.tpBank = false
-            self.tpZoneFarm = false
+            global:leaveDialog()
             Craft.selectedItemToFarm = false
+            Time.TimerInitialized = false
+            self.RoadLoaded = false
+            self.tpZoneFarm = false
+            self.tpBank = false
+            self.configRoad = false
+            self.countFailMoveNext = 0
+            self.lastFailMapId = 0
+            self:HavenBag()
+            self:Move()
         end
     end
 
     function Movement:ConfigRoad()
         self.mapIdToRoad = {}
+        self.pathMine = {}
         self.monsterDropItem = {}
         local mstrDrop = Monsters:GetMonsterIdByDropId(Craft.ItemsToDrop[Craft.currentIndexItemToDrop].itemId)
 
         local function getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
-            self.mapIdToRoad = {}
             Utils:Print("Get rand subArea")
+            self.mapIdToRoad = {}
+            self.pathMine = {}
             if Utils:LenghtOfTable(self.logFarmedZone) > 10 then
                 table.remove(self.logFarmedZone, 11)
             end
@@ -297,26 +208,21 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
 
             for kSubAreaId, vMaps in pairs(subAreaContainsResToFarm) do
                 if i == rand then
-                    --Utils:Print(Utils:LenghtOfTable(subAreaContainsResToFarm), "dev")
+                    Utils:Print(Utils:LenghtOfTable(subAreaContainsResToFarm), "dev")
 
                     if Utils:LenghtOfTable(subAreaContainsResToFarm) > 1 then
                         local iStep = 0
                         --Utils:Print("Ici", "dev")
 
-                        for iLog = #self.logFarmedZone, 1, -1 do
-                            Utils:Print("logFarmedGatherId = " .. self.logFarmedZone[iLog].gatherId, "dev")
-                            Utils:Print("gatherIdToFarm = " .. gatherIdToFarm, "dev")
-                            if self.logFarmedZone[iLog].gatherId == gatherIdToFarm then
-                                Utils:Print("logFarmedSubAreaId = " .. self.logFarmedZone[iLog].subAreaId, "dev")
-                                Utils:Print("kSubAreaId = " .. kSubAreaId, "dev")
-
-                                if self.logFarmedZone[iLog].subAreaId == kSubAreaId then
-                                    Utils:Print("Re rand")
-                                    getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
-                                end
+                         for iLog = #self.logFarmedZone, 1, -1 do
+                            --Utils:Print("logFarmedGatherId = " .. self.logFarmedZone[iLog].gatherId, "dev")
+                            --Utils:Print("gatherIdToFarm = " .. gatherIdToFarm, "dev")
+                            if self.logFarmedZone[iLog].subAreaId == kSubAreaId then
+                                --Utils:Print("Re rand")
+                                getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
                             end
 
-                            if iStep == math.ceil((#subAreaContainsResToFarm / 4) * 3) then
+                            if iStep == math.floor((#subAreaContainsResToFarm / 4) * 3) then
                                 break
                             end
 
@@ -334,7 +240,7 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
                         end
                     end
 
-                    if countResInSubArea > 10 and Utils:LenghtOfTable(subAreaContainsResToFarm) > 1 then
+                    if countResInSubArea > 1 then
                         table.insert(self.logFarmedZone, { gatherId = gatherIdToFarm, subAreaId = kSubAreaId })
 
                         for _, vMap in pairs(vMaps) do
@@ -362,32 +268,48 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
                         FORBIDDEN_MONSTERS = {}
                         FORCE_MONSTERS = {}
 
+                        local diffTable = {
+                            {350, 300, 250, 200, 150, 125, 100, 0},
+                            {700, 600, 500, 450, 400, 200, 100, 0}
+                        }
+
+                        local iDiffT = 1
+
                         local monsterInfo = Monsters:GetMonstersInfoByGrade(v, 5)
 
-                        local diffPercent = Math:DiffPercent(character:level(), monsterInfo.level)
+                        local diffPercent = Math:DiffPercent(character:maxLifePoints(), monsterInfo.lifePoints)
 
-                        if diffPercent >= 150 then
-                            MIN_MONSTERS = 2
+                        if monsterInfo.lifePoints < 500 then
+                            iDiffT = 2
+                        end
+
+                        if diffPercent >= Utils:GetTableValue(1, diffTable[iDiffT]) then
+                            MIN_MONSTERS = 1
                             MAX_MONSTERS = 8
-                        elseif diffPercent >= 100 then
-                            MIN_MONSTERS = 2
+                        elseif diffPercent >= Utils:GetTableValue(2, diffTable[iDiffT]) then
+                            MIN_MONSTERS = 1
+                            MAX_MONSTERS = 7
+                        elseif diffPercent >= Utils:GetTableValue(3, diffTable[iDiffT]) then
+                            MIN_MONSTERS = 1
                             MAX_MONSTERS = 6
-                        elseif diffPercent >= 75 then
-                            MIN_MONSTERS = 2
+                        elseif diffPercent >= Utils:GetTableValue(4, diffTable[iDiffT]) then
+                            MIN_MONSTERS = 1
                             MAX_MONSTERS = 5
-                        elseif diffPercent >= 50 then
-                            MIN_MONSTERS = 2
-                            MAX_MONSTERS = 3
-                        elseif diffPercent >= 25 then
+                        elseif diffPercent >= Utils:GetTableValue(5, diffTable[iDiffT]) then
+                            MIN_MONSTERS = 1
+                            MAX_MONSTERS = 4
+                        elseif diffPercent >= Utils:GetTableValue(6, diffTable[iDiffT]) then
                             MIN_MONSTERS = 1
                             MAX_MONSTERS = 3
-                        elseif diffPercent >= 0 then
+                        elseif diffPercent >= Utils:GetTableValue(7, diffTable[iDiffT]) then
                             MIN_MONSTERS = 1
                             MAX_MONSTERS = 2
-                        elseif diffPercent < 0 then
+                        elseif diffPercent < Utils:GetTableValue(8, diffTable[iDiffT]) then
                             MIN_MONSTERS = 1
                             MAX_MONSTERS = 1
                         end
+                        
+                        Utils:Print("Difficulté des monstres établie a " .. MAX_MONSTERS .. " monstres maximum dans le combat !", "Fight")
 
                         self.monsterDropItem = mstrDrop
 
@@ -402,71 +324,74 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
             self.dropAction = "gather"
             GATHER = {}
 
-            for k, v in pairs(GatherInfo) do
-                if v.objectId == Craft.ItemsToDrop[Craft.currentIndexItemToDrop].itemId then
-                    if job:level(v.jobId) < v.minLvlToFarm then
-                        Utils:Print(job:level(v.jobId), "Dev")
-                        Utils:Print(v.minLvlToFarm, "Dev")
-                        global:delay(10000)
-                        local possibleResFarm = {}
+            for _, vToDrop in pairs(Craft.ItemsToDrop) do
+                local isMonsterDrop = Monsters:GetMonsterIdByDropId(vToDrop.itemId)
 
-                        Utils:Print("Vous n'avez pas le niveau requis pour farm la ressouce " .. inventory:itemNameId(v.objectId), "Info")
-                        for _, v2 in pairs(GatherInfo) do
-                            if v2.jobId == v.jobId and job:level(v.jobId) >= v2.minLvlToFarm then
-                                table.insert(possibleResFarm, v2)
+                if #isMonsterDrop == 0 then
+                    for k, v in pairs(Info.gatherInfo) do
+                        if v.objectId == vToDrop.itemId then
+                            if job:level(v.jobId) < v.minLvlToFarm then
+                                Utils:Print(job:level(v.jobId), "Dev")
+                                Utils:Print(v.minLvlToFarm, "Dev")
+                                local possibleResFarm = {}
+
+                                Utils:Print("Vous n'avez pas le niveau requis pour farm la ressouce " .. inventory:itemNameId(v.objectId), "Info")
+                                for _, v2 in pairs(Info.gatherInfo) do
+                                    if v2.jobId == v.jobId and job:level(v.jobId) >= v2.minLvlToFarm then
+                                        table.insert(possibleResFarm, v2)
+                                    end
+                                end
+
+                                local maxLvl = 0
+                                local gatherIdToFarm = 0
+
+                                for _, vRes in pairs(possibleResFarm) do
+                                    if vRes.minLvlToFarm > maxLvl then
+                                        maxLvl = vRes.minLvlToFarm
+                                        gatherIdToFarm = vRes.gatherId
+                                    end
+                                end
+
+                                if gatherIdToFarm == 0 then
+                                    Utils:Print("GatherIdToFarm = 0", "configroad")
+                                end
+
+                                table.insert(GATHER, gatherIdToFarm)
+
+                                if Craft.ItemsToDrop[Craft.currentIndexItemToDrop].itemId == v.objectId then
+                                    local subAreaContainsResToFarm = Zone:RetrieveSubAreaContainingRessource(gatherIdToFarm)
+
+                                    getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
+                                end
+                            else
+                                local gatherIdToFarm = 0
+
+                                for _, vGather in pairs(Info.gatherInfo) do
+                                    if vGather.objectId == vToDrop.itemId then
+                                        gatherIdToFarm = vGather.gatherId
+                                        table.insert(GATHER, vGather.gatherId)
+                                        break
+                                    end
+                                end
+
+                                if Craft.ItemsToDrop[Craft.currentIndexItemToDrop].itemId == v.objectId then
+                                    local subAreaContainsResToFarm = Zone:RetrieveSubAreaContainingRessource(gatherIdToFarm)
+
+                                    getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
+                                end
                             end
+                            
                         end
-
-                        local maxLvl = 0
-                        local gatherIdToFarm = 0
-
-                        for _, vRes in pairs(possibleResFarm) do
-                            if vRes.minLvlToFarm > maxLvl then
-                                maxLvl = vRes.minLvlToFarm
-                                gatherIdToFarm = vRes.gatherId
-                            end
-                        end
-
-                        if gatherIdToFarm == 0 then
-                            Utils:Print("GatherIdToFarm = 0", "configroad")
-                        end
-
-                        table.insert(GATHER, gatherIdToFarm)
-
-                        local subAreaContainsResToFarm = Zone:RetrieveSubAreaContainingRessource(gatherIdToFarm)
-
-                        getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
-                    else
-                        local gatherIdToFarm = 0
-
-                        for _, vGather in pairs(GatherInfo) do
-                            if vGather.objectId == Craft.ItemsToDrop[Craft.currentIndexItemToDrop].itemId then
-                                gatherIdToFarm = vGather.gatherId
-                                table.insert(GATHER, vGather.gatherId)
-                                break
-                            end
-                        end
-
-                        local subAreaContainsResToFarm = Zone:RetrieveSubAreaContainingRessource(gatherIdToFarm)
-
-                        getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
                     end
+
                 end
             end
+
         end
 
         if Utils:LenghtOfTable(self.mapIdToRoad) > 0 then
             self.configRoad = true
         end
-    end
-
-    function Movement:IsIncarnamMapId(mapId)
-        for _, v in pairs(Zone:GetAreaMapId(45)) do
-            if v == mapId then
-                return true
-            end
-        end
-        return false
     end
 
     function Movement:RoadZone(tblMapId)
@@ -476,9 +401,24 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
                 self.pathMineLoaded = false
                 self.RZNextMapId = tblMapId[global:random(1, #tblMapId)]
 
+                local tentaNewMap = 0
+
                 while self:AlreadyCrossedRZNextMapId(tblMapId, self.RZNextMapId) or self:ExcludeMapId(self.RZNextMapId) do
-                    --Utils:Print("Map AlreadyCrossed", "dev")
+                    Utils:Print("Map AlreadyCrossed", "dev")
                     self.RZNextMapId = tblMapId[global:random(1, #tblMapId)]
+                    tentaNewMap = tentaNewMap + 1
+                    if tentaNewMap == 50 then
+                        Craft.selectedItemToFarm = false
+                        Time.TimerInitialized = false
+                        self.RoadLoaded = false
+                        self.tpZoneFarm = false
+                        self.tpBank = false
+                        self.configRoad = false
+                        self.countFailMoveNext = 0
+                        self.lastFailMapId = 0
+                        self:HavenBag()
+                        self:Move()
+                    end
                 end
 
                 Utils:Print("RZNextMapId = " .. self.RZNextMapId, "dev")
@@ -495,7 +435,7 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
             end
 
             if not self.tpZoneFarm then
-                if self:MapDistance(map:currentMapId(), self.RZNextMapId) > 20 and not self:IsIncarnamMapId(self.RZNextMapId) then
+                if not self:IsIncarnamMapId(self.RZNextMapId) then
                     if map:currentMap() == "0,0" then
                         self.tpZoneFarm = true
                         local nextMap = self.RZNextMapId
@@ -513,6 +453,12 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
             end
 
             if self.tpZoneFarm then
+                developer:suspendScriptUntil("ZaapDestinationsMessage", 100, false)
+                if self.iZaapOpen then
+                    global:leaveDialog()
+                    developer:suspendScriptUntil("LeaveDialogMessage", 100, false)
+                end
+
                 if PathFinder:IsMine(self.RZNextMapId) and PathFinder:IsMine(map:currentMapId()) then
                     if not self.pathMineLoaded then
                         self.pathMine = PathFinder:LoadPathtoMapId(self.RZNextMapId)
@@ -526,8 +472,10 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
                     end
                 end
 
-                if self.lastFailMapId == map:currentMapId() and self.countFailMoveNext > 100 then
+                if self.lastFailMapId == map:currentMapId() and self.countFailMoveNext > 25 then
+                    global:leaveDialog()
                     Craft.selectedItemToFarm = false
+                    Time.TimerInitialized = false
                     self.RoadLoaded = false
                     self.tpZoneFarm = false
                     self.tpBank = false
@@ -543,6 +491,8 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
                 self.RZNextMapId = -1
             end
 
+
+            Utils:Print("Apres moveNext", "dev")
             self:RoadZone(tblMapId)
         else
             Utils:Print("Table nil", "RoadZone", "error")
@@ -563,7 +513,7 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
 
             iStep = iStep + 1
 
-            if iStep == math.ceil((#tblMapId / 4) * 3) then
+            if iStep == math.floor((#tblMapId / 4) * 3) then
                 return false
             end
         end
@@ -579,14 +529,27 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
         return false
     end
 
+    function Movement:IsIncarnamMapId(mapId)
+        for _, v in pairs(Zone:GetAreaMapId(45)) do
+            if v == mapId then
+                return true
+            end
+        end
+        return false
+    end
+
     function Movement:Bank()
         Craft.selectedItemToFarm = false
         Craft.checkPossibleCraft = false
+        self.mapIdToRoad = {}
+        self.configRoad = false
         self.tpZoneFarm = false
         return self:Move()
     end
 
     function Movement:HavenBag()
+        self.CheckHavenBag:RunCheck()
+
         if map:currentMap() ~= "0,0" then
             map:changeMap('havenbag')
         end
@@ -623,8 +586,6 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
         local source = 3
         zaapCellId = zaapCellId or 310
 
-        developer:registerMessage("ZaapDestinationsMessage", CB_ZaapDestinations)
-
         if map:currentMap() ~= "0,0" then
             source = 0
         else
@@ -632,7 +593,6 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
         end
 
         developer:suspendScriptUntil("ZaapDestinationsMessage", 100, false)
-        developer:unRegisterMessage("ZaapDestinationsMessage")
 
         local closestZaap = self:ClosestZaap(mapIdDest)
 
@@ -708,12 +668,18 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
     end
 
     function CB_ZaapDestinations(packet)
+        Movement.iZaapOpen = true
         Movement.zaapDestinations = {}
         for _, v in pairs(packet.destinations) do
             table.insert(Movement.zaapDestinations, v)
         end
     end
 
+    function CB_LeaveDialogMessage(packet)
+        if packet.dialogType == 10 then
+            Movement.iZaapOpen = false
+        end
+    end
     -- Action
 
     Action.statedElements = {}
@@ -721,99 +687,7 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
 
     Action.harvestableElements = {}
 
-    Action.bagsId = {
-        -- Paysan
-        7941,
-        7942,
-        7943,
-        7944,
-        7945,
-        7946,
-        7947,
-        7948,
-        7949,
-        11113,
-        16532,
-        16533,
-
-
-        -- Bucheron
-        7950,
-        7951,
-        7952,
-        7953,
-        7954,
-        7955,
-        7956,
-        7957,
-        7958,
-        7959,
-        7960,
-        7961,
-        7962,
-        7963,
-        7996,
-        8081,
-        11112,
-        16531,
-
-        -- Alchimiste
-
-        7964,
-        7965,
-        7966,
-        7967,
-        7968,
-        7969,
-        7970,
-        11103,
-        16528,
-        16529,
-        16530,
-        18059,
-        24041,
-
-        -- Mineur
-
-        7971,
-        7972,
-        7973,
-        7974,
-        7975,
-        7976,
-        7977,
-        7978,
-        7979,
-        7980,
-        7981,
-        11114,
-
-        -- Pecheur
-
-        7982,
-        7983,
-        7984,
-        7985,
-        7986,
-        7987,
-        7988,
-        7989,
-        7990,
-        7991,
-        7992,
-        7993,
-        7994,
-        7995,
-        11111,
-        16534,
-        16535,
-        16536,
-        16537,
-        16538,
-        16539,
-
-
-    }
+    Action.bagsId = Info.bagsId
 
     function Action:Gather()
         Packet:SubManager({ 
@@ -863,34 +737,6 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
         table.sort(self.harvestableElements, function(a, b)
             return a.dist < b.dist
         end)
-
-        local iSort = 1
-
-        while true do
-            local minDist = 1000
-            local iModif = 1
-
-            if iSort == #self.harvestableElements then
-                self.harvestableElements[iSort].dist = 1000
-                break
-            end
-
-            for i, vHarvestableElement in ipairs(self.harvestableElements) do
-                local clcDist = Utils:ManhattanDistanceCellId(self.harvestableElements[iSort].cellId, vHarvestableElement.cellId)
-                if clcDist < minDist and clcDist ~= 0 then
-                    minDist = clcDist
-                    iModif = i
-                end
-            end
-
-            self.harvestableElements[iModif].dist = minDist
-
-            iSort = iSort + 1
-        end
-
-        table.sort(self.harvestableElements, function(a, b)
-            return a.dist > b.dist
-        end)
     end
 
     function Action:OpenBags()
@@ -901,6 +747,21 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
         end
     end
 
+    function Action:ResetScript()
+        global:leaveDialog()
+        Craft.selectedItemToFarm = false
+        Time.TimerInitialized = false
+        Movement.RoadLoaded = false
+        Movement.tpZoneFarm = false
+        Movement.tpBank = false
+        Movement.configRoad = false
+        Movement.mapIdToRoad = {}
+        Movement.countFailMoveNext = 0
+        Movement.lastFailMapId = 0
+        Movement:HavenBag()
+        Movement:Move()
+    end
+
     function CB_MapComplementaryInformations(packet)
         Action.statedElements = packet.statedElements
         Action.integereractiveElements = packet.integereractiveElements
@@ -908,25 +769,7 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
 
     -- Craft
 
-    Craft.CraftInfo = {
-        ["Bricoleur"] = {
-            {
-                craftName = "Clef des Champs",
-                craftId = 8143,
-                nbCraftBeforeNextCraft = 50,
-                maxCraftPerDay = 1000
-            }
-        },
-        ["Mineur"] = {
-            {
-                craftName = "Aluminite",
-                craftId = 747,
-                nbCraftBeforeNextCraft = 50,
-                maxCraftPerDay = 1000,
-                toolType = "Fondre"
-            },
-        }
-    }
+    Craft.CraftInfo = Config.craft
 
     Craft.propertiesInit = false
     Craft.checkPossibleCraft = false
@@ -939,7 +782,6 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
     Craft.workshopInfoInitialized = false
     Craft.currentWorkshopMapId = 0
     Craft.currentWorkshopId = 0
-    Craft.toolType = ""
 
     Craft.currentCraft = {}
 
@@ -961,6 +803,28 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
         end
 
         if not self.canCraft and self.checkPossibleCraft then
+            local allItemDroped = true
+
+            for _, vDrop in pairs(self.ItemsToDrop) do
+                if inventory:itemCount(vDrop.itemId) < vDrop.itemsToRetrieve then
+                    allItemDroped = false
+                end
+            end
+
+            if allItemDroped then
+                Utils:Print("Tout les items nécéssaire au craft on était récupérer retour a la bank !", "Craft")
+                self.checkPossibleCraft = false
+                self.selectedItemToFarm = false
+                Time.TimerInitialized = false
+                Movement.RoadLoaded = false
+                Movement.tpZoneFarm = false
+                Movement.tpBank = false
+                Movement.configRoad = false
+                Movement.countFailMoveNext = 0
+                Movement.lastFailMapId = 0
+                self:CraftManager()
+            end
+
             while not self.selectedItemToFarm do
                 if Utils:LenghtOfTable(self.ItemsToDrop) > 1 then
                     local rand = global:random(1, Utils:LenghtOfTable(self.ItemsToDrop))
@@ -985,25 +849,17 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
 
                 self.currentWorkshopMapId = workshopInfo.mapId
 
-                if workshopInfo.singleWorkshopJob then
-                    local rand = global:random(1, #workshopInfo.workshopId)
-
-                    self.currentWorkshopId = workshopInfo.workshopId[rand]
-
-                    self.workshopInfoInitialized = true
-                else
-                    for kToolType, vTbl in pairs(workshopInfo.workshopId) do
-                        if Utils:Equal(kToolType, self.currentCraft.toolType) then
-                            local rand = global:random(1, #vTbl)
-                            self.currentWorkshopId = vTbl[rand]
-                            self.workshopInfoInitialized = true
-                            break
-                        end
+                for kSkillId, vTbl in pairs(workshopInfo.workshopId) do
+                    if Utils:Equal(kSkillId, self.currentCraft.skillId) then
+                        local rand = global:random(1, #vTbl)
+                        self.currentWorkshopId = vTbl[rand]
+                        self.workshopInfoInitialized = true
+                        break
                     end
+                end
 
-                    if not self.workshopInfoInitialized then
-                        Utils:Print("Aucun workshop trouvée !", "CraftManager", "error")
-                    end
+                if not self.workshopInfoInitialized then
+                    Utils:Print("Aucun workshop trouvée !", "CraftManager", "error")
                 end
             end
 
@@ -1030,9 +886,14 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
                         end
                     end
 
-                    craft:changeQuantityToCraft(self:CalculMaxPossibleItemToCraft())
+                    local lot = self:CalculMaxPossibleItemToCraft()
+
+                    craft:changeQuantityToCraft(lot)
 
                     craft:ready()
+
+                    Utils:Print("L'objet " .. inventory:itemNameId(self.currentCraft.craftId) .. " a était fabriqué par lot de x" .. lot .. " !", "Craft")
+
                     global:leaveDialog()
 
                     self.checkPossibleCraft = false
@@ -1078,6 +939,15 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
     end
 
     function Craft:CheckCraft()
+        local function calculItemToPick(vIng)
+            local maxItemInInventory = self:CalculMaxIngredientsInInventory(self:CalculTotalWeightIng(self.currentCraft.ingredients), vIng.quantity)
+
+
+            if maxItemInInventory / vIng.quantity > self.currentCraft.nbCraftBeforeNextCraft then
+                maxItemInInventory = self.currentCraft.nbCraftBeforeNextCraft * vIng.quantity
+            end
+            return maxItemInInventory
+        end
         Utils:Print("Check craft", "Info")
 
         self.currentCraft = self:GetCurrentCraft()
@@ -1087,7 +957,7 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
         self.canCraft = true
 
         for _, vIng in pairs(self.currentCraft.ingredients) do
-            local maxItemInInventory = self:MaxPossibleItemInInventoryForCraft(self:CalculTotalWeightIng(self.currentCraft.ingredients), vIng.quantity)
+            local maxItemInInventory = calculItemToPick(vIng)
 
             if exchange:storageItemQuantity(vIng.ingredientId) < maxItemInInventory then
                 self.canCraft = false
@@ -1099,14 +969,15 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
         end
 
         if self.canCraft then
-            for _, vIngInfo in pairs(self.currentCraft.ingredients) do
-                exchange:getItem(vIngInfo.ingredientId, self:MaxPossibleItemInInventoryForCraft(self:CalculTotalWeightIng(self.currentCraft.ingredients), vIngInfo.quantity))
+            Utils:Print("L'objet " .. inventory:itemNameId(self.currentCraft.craftId) .. " peut être crafter !", "Craft")
+
+            for _, vIng in pairs(self.currentCraft.ingredients) do
+                exchange:getItem(vIng.ingredientId, calculItemToPick(vIng))
             end
 
             Movement.podsMaxBeforeBank = 101
-            Utils:Print("Can craft")
         else
-            Movement.podsMaxBeforeBank = global:random(minPercentPodsBeforeBank, maxPercentPodsBeforeBank)
+            Movement.podsMaxBeforeBank = global:random(Config.minPercentPodsBeforeBank, Config.maxPercentPodsBeforeBank)
             Utils:Print("Prochain retour a la banque a " .. Movement.podsMaxBeforeBank .. "% pods", "Info")
         end
 
@@ -1120,6 +991,12 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
             weight = weight + (inventory:itemWeight(v.ingredientId) * v.quantity)
         end
         return weight
+    end
+
+    function Craft:CalculMaxIngredientsInInventory(totalWeightIngCraft, nbIng)
+        --Utils:Print("totalWeight = " .. totalWeightIngCraft .. " nbIng = " .. nbIng)
+        --Utils:Print("Round " .. (math.round((inventory:podsMax() - inventory:pods()) - 100, 100)))
+        return ((math.round((inventory:podsMax() - inventory:pods()) - 100, 100)) / totalWeightIngCraft) * nbIng
     end
 
     function Craft:CalculMaxPossibleItemToCraft()
@@ -1163,14 +1040,21 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
         for _, v in pairs(self:GetJobCraft()) do
             if v.currentCraftedItems < v.nbCraftBeforeNextCraft and job:level(Craft:GetJobId(v.craftId)) >= Craft:GetLevel(v.craftId) then
                 local ret = Craft:GetCraftInfo(v.craftId)
+                Utils:Print("L'objet " .. inventory:itemNameId(v.craftId) .. " est séléctionner !", "Craft")
                 ret.craftName = v.craftName
-                if v.toolType then
-                    ret.toolType = v.toolType
-                end
+                ret.nbCraftBeforeNextCraft = v.nbCraftBeforeNextCraft
+                ret.maxCraftPerDay = v.maxCraftPerDay
                 return ret
             end
         end
-        return nil
+        self:UpdateLimitCraft()
+        return self:GetCurrentCraft()
+    end
+
+    function Craft:UpdateLimitCraft()
+        for _, v in pairs(self:GetJobCraft()) do
+            v.currentCraftedItems = 0
+        end
     end
 
     function Craft:GetJobCraft()
@@ -1182,141 +1066,9 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
         return nil
     end
 
-    function Craft:MaxPossibleItemInInventoryForCraft(totalWeightIngCraft, nbIng)
-        --Utils:Print("totalWeight = " .. totalWeightIngCraft .. " nbIng = " .. nbIng)
-        return ((math.round((inventory:podsMax() - inventory:pods()) - 100, 100)) / totalWeightIngCraft) * nbIng
-    end
-
     -- PathFinder (mine)
 
-    PathFinder.changeMapInfo = {
-        -- Mine Hérale
-        ["97261059"] = {
-            mapId = 97261059,
-            moveMapInfo = {
-                { path =  417, toMapId = 97260033 }
-            }
-        },
-        ["97260033"] = {
-            mapId = 97260033,
-            moveMapInfo = {
-                { path =  405, toMapId = 97261057 },
-                { path =  183, toMapId = 97261059 },
-    
-            }
-        },
-        ["97261057"] = {
-            mapId = 97261057,
-            moveMapInfo = {
-                { path = 421, toMapId = 97259011 },
-                { path = 235, toMapId = 97255939 },
-                { path = 487, toMapId = 97257987 },
-                { path = 227, toMapId = 97260033 }
-            }
-        },
-        ["97259011"] = {
-            mapId = 97259011,
-            moveMapInfo = {
-                { path = 276, toMapId = 97261057 }
-            }
-        },
-        ["97255939"] = {
-            mapId = 97255939,
-            moveMapInfo = {
-                { path = 478, toMapId = 97261057 },
-                { path = 446, toMapId = 97256963 }
-            }
-        },
-        ["97256963"] = {
-            mapId = 97256963,
-            moveMapInfo = {
-                { path = 172, toMapId = 97255939 },
-                { path = 492, toMapId = 97257987 }
-            }
-        },
-        ["97257987"] = {
-            mapId = 97257987,
-            moveMapInfo = {
-                { path = 249, toMapId = 97256963 },
-                { path = 212, toMapId = 97261057 },
-                { path = 492, toMapId = 97260035 }
-            }
-        },
-        ["97260035"] = {
-            mapId = 97260035,
-            moveMapInfo = {
-                { path = 288, toMapId = 97257987 }
-            }
-        },
-        -- Mine Astirite
-        ["97261071"] = {
-            mapId = 97261071,
-            moveMapInfo = {
-                { path = 248, toMapId = 97260047 }
-            }
-        },
-        ["97260047"] = {
-            mapId = 97260047,
-            moveMapInfo = {
-                { path = 379, toMapId = 97261071 },
-                { path = 432, toMapId = 97257999 }
-            }
-        },
-        ["97257999"] = {
-            mapId = 97257999,
-            moveMapInfo = {
-                { path = 268, toMapId = 97260047 },
-                { path = 247, toMapId = 97259023 },
-                { path = 403, toMapId = 97256975 },
-            }
-        },
-        ["97259023"] = {
-            mapId = 97259023,
-            moveMapInfo = {
-                { path = 451, toMapId = 97257999 }
-            }
-        },
-        ["97256975"] = {
-            mapId = 97256975,
-            moveMapInfo = {
-                { path = 323, toMapId = 97257999 },
-                { path = 497, toMapId = 97255951 }
-            }
-        },
-        ["97255951"] = {
-            mapId = 97255951,
-            moveMapInfo = {
-                { path = 203, toMapId = 97256975 }
-            }
-        },
-        -- Mine porco 1
-        ["30670848"] = {
-            mapId = 30670848,
-            moveMapInfo = {
-                { path = 344, toMapId = 30671107 }
-            }
-        },
-        ["30671107"] = {
-            mapId = 30671107,
-            moveMapInfo = {
-                { path = 298, toMapId = 30670848 },
-                { path = 247, toMapId = 30671110 }
-            }
-        },
-        ["30671110"] = {
-            mapId = 30671110,
-            moveMapInfo = {
-                { path = 479, toMapId = 30671107 },
-                { path = 188, toMapId = 30671116 }
-            }
-        },
-        ["30671116"] = {
-            mapId = 30671116,
-            moveMapInfo = {
-                { path = 292, toMapId = 30671110 }
-            }
-        },
-    }
+    PathFinder.changeMapInfo = dofile(global:getCurrentScriptDirectory() .. "\\MapGraph.lua")
 
     PathFinder.PFinit = false
 
@@ -1340,14 +1092,20 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
         local dijkstra = Graph:NewDijkstra()
         local pathToRet = {}
         dijkstra:run(Graph.PFgraph, map:currentMapId())
-        local path = dijkstra:getPathTo(toMapId)
 
-        for i = 0,path:size()-1 do
-            table.insert(pathToRet, self:GetChangeMapInfo(path:get(i):from(), path:get(i):to()))
-            --Utils:Print('# from ' .. path:get(i):from() .. ' to ' .. path:get(i):to() .. ' ( distance: ' .. path:get(i).weight .. ' )')
+        if dijkstra:hasPathTo(toMapId) then
+            local path = dijkstra:getPathTo(toMapId)
+
+            for i = 0, path:size() - 1 do
+                table.insert(pathToRet, self:GetChangeMapInfo(path:get(i):from(), path:get(i):to()))
+                --Utils:Print('# from ' .. path:get(i):from() .. ' to ' .. path:get(i):to() .. ' ( distance: ' .. path:get(i).weight .. ' )')
+            end
+    
+            return pathToRet
+        else
+            Utils:Print("Dijkstra ne trouve aucun path pour la mapId ("..toMapId..")", "dev", "error")
+            Action:ResetScript()
         end
-
-        return pathToRet
     end
 
     function PathFinder:GetChangeMapInfo(fromMapId, toMapId)
@@ -1402,7 +1160,7 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
         local day = os.date("%A")
         local hour, minute = Utils:GenerateDateTime("h"), Utils:GenerateDateTime("m")
 
-        for kDay, vTbl in pairs(WORKTIME_JOB) do
+        for kDay, vTbl in pairs(Config.wortimeJob) do
             --Utils:Print(kDay .. " | " .. day)
             if Utils:Equal(kDay, day) then
                 for _, v in pairs(vTbl) do
@@ -1452,8 +1210,8 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
     Time.TimerRandTimeToWait = 0
 
     function Time:Timer(min, max)
-        min = min or minMinutesOnFarmingZone
-        max = max or maxMinutesOnFarmingZone
+        min = min or Config.minMinutesOnFarmingZone
+        max = max or Config.maxMinutesOnFarmingZone
 
         if not self.TimerInitialized then
             self.TimerRandTimeToWait = global:random(min, max)
@@ -1477,15 +1235,15 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
     function Time:DiffTime(hStart, mStart, hFinish, mFinish)
         local diffTimeMin = 0
         while true do
-            if hStart == hFinish and mStart == mFinish then
+            if tonumber(hStart) == tonumber(hFinish) and tonumber(mStart) == tonumber(mFinish) then
                 return diffTimeMin
             end
-            if mStart == 60 then
+            if tonumber(mStart) >= 60 then
                 hStart = hStart + 1
                 mStart = 0
             end
-            if hStart == 24 then
-                hStart = 0  
+            if tonumber(hStart) >= 24 then
+                hStart = 0
             end
             diffTimeMin = diffTimeMin + 1
             mStart = mStart + 1
@@ -1497,7 +1255,7 @@ Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
         for kPacketName, vCallBack in pairs(packetToSub) do
             if register then -- Abonnement au packet
                 if not developer:isMessageRegistred(kPacketName) then
-                    --Print("Abonnement au packet : "..packetName, "packet")
+                    Utils:Print("Abonnement au packet : "..kPacketName, "packet")
                     developer:registerMessage(kPacketName, vCallBack)
                 end            
             else -- Désabonnement des packet
