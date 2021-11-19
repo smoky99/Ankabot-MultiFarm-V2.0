@@ -64,7 +64,13 @@ Config.craft = {
         {
             craftName = "Substrat de buisson",
             craftId = 2539,
-            nbCraftBeforeNextCraft = 50,
+            nbCraftBeforeNextCraft = 100,
+            maxCraftPerDay = 1000
+        },
+        {
+            craftName = "Substrat de bocage",
+            craftId = 12745,
+            nbCraftBeforeNextCraft = 100,
             maxCraftPerDay = 1000
         },
     },

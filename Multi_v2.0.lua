@@ -59,18 +59,6 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
 
     Movement.iZaapOpen = false
 
-    function Monsters:GetHighestLifeMonstersZone(subArea)
-        local monstersZone = Zone:GetSubAreaMonsters(subArea)
-        local maxLife = 0
-        for _, v in pairs(monstersZone) do
-            local infoMonsters = Monsters:GetMonstersInfoByGrade(v, 5)
-            if infoMonsters.lifePoints > maxLife then
-                maxLife = infoMonsters.lifePoints
-            end
-        end
-        return maxLife
-    end
-
     function Movement:Move()
         Packet:SubManager({["ZaapDestinationsMessage"] = CB_ZaapDestinations, ["LeaveDialogMessage"] = CB_LeaveDialogMessage}, true)
         self.inBank = false
@@ -553,6 +541,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     function Movement:Bank()
         Craft.selectedItemToFarm = false
         Craft.checkPossibleCraft = false
+        Time.TimerInitialized = false
         self.mapIdToRoad = {}
         self.configRoad = false
         self.tpZoneFarm = false
@@ -932,7 +921,6 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
 
     function Craft:GetCurrentWorkShopInfo(area)
         local workshopAreaInfo = nil
-        Utils:Print(job:name(self.currentCraft.jobId), "Craft")
 
         for kJob, vWorkShopAreaInfo in pairs(Movement.WorkshopInfo) do
             if Utils:Equal(job:name(self.currentCraft.jobId), kJob) then
@@ -975,12 +963,13 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
         end
 
         local function addAllMissingIngToDrop(craft)
+            local currentCraftName = inventory:itemNameId(self.currentCraft.craftId)
             for _, vIng in pairs(craft.ingredients) do
                 local nbItemToPick = calculItemToPick(vIng)
                 if exchange:storageItemQuantity(vIng.ingredientId) < nbItemToPick then
                     local craftInfo = self:GetCraftInfo(vIng.ingredientId)
                     if craftInfo ~= nil then
-                        Utils:Print("Le craft (" .. inventory:itemNameId(self.currentCraft.craftId) .. ") nécéssite de fabriquée l'objet (" .. inventory:itemNameId(craftInfo.craftId) .. ") du métier " .. job:name(craftInfo.jobId), "Craft")
+                        Utils:Print("Le craft (" .. currentCraftName .. ") nécéssite de fabriquée l'objet (" .. inventory:itemNameId(craftInfo.craftId) .. ") du métier " .. job:name(craftInfo.jobId), "Craft")
                         craftInfo.nbCraftBeforeNextCraft = nbItemToPick
 
                         if job:level(craftInfo.jobId) < craftInfo.craftLvl then
@@ -1003,7 +992,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             end
         end
 
-        Utils:Print("Check craft", "Info")
+        Utils:Print("Vérification des craft possible !", "Craft")
 
         self.currentCraft = self:GetCurrentCraft()
 
@@ -1013,6 +1002,10 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
 
         if checkThatAllIngToCraft(self.currentCraft) then
             Utils:Print("L'objet " .. inventory:itemNameId(self.currentCraft.craftId) .. " peut être crafter !", "Craft")
+            self.workshopInfoInitialized = false
+            Movement.configRoad = false
+            Movement.tpZoneFarm = false
+            Time.TimerInitialized = false
             self.canCraft = true
 
             local toPick = {}
@@ -1204,7 +1197,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
         Graph.PFgraph = Graph:NewGraph(1, true)
         for _, vMap in pairs(self.changeMapInfo) do
             for _, vInfo in pairs(vMap.moveMapInfo) do
-                Graph.PFgraph:addEdge(vMap.mapId, vInfo.toMapId, 1.0) -- edge from 0 to 1 is 5.0 in distance
+                Graph.PFgraph:addEdge(vMap.mapId, vInfo.toMapId, 1.0)
             end
         end
     end
@@ -1214,11 +1207,6 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     Worker.init = false
     Worker.nextTimeToReassignJob = ""
     Worker.currentJob = ""
-    Worker.enumJobSkillId = {
-        ["Mineur"] = {32, 48},
-        ["Bijoutier"] = {12},
-        ["Bricoleur"] = {171},
-    }
 
     function Worker:WorkManager()
         if not self.init or self.nextTimeToReassignJob == os.date("%H:%M") then
@@ -1273,18 +1261,6 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
         end
     end
 
-    function Worker:GetJobNameBySkillId(skillId)
-        for kJob, vTblSkillId in pairs(self.enumJobSkillId) do
-            for _, vSkillId in pairs(vTblSkillId) do
-                if Utils:Equal(vSkillId, skillId) then
-                    return kJob
-                end
-            end
-        end
-        Utils:Print("Aucun job trouver pour le skillId (" .. skillId .. ") !", "Craft:GetJobNameBySkillId", "error")
-        return ""
-    end
-
     -- Time
 
     Time.TimerInitialized = false
@@ -1337,6 +1313,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     end
 
     -- Packet
+
     function Packet:SubManager(packetToSub, register)
         for kPacketName, vCallBack in pairs(packetToSub) do
             if register then -- Abonnement au packet
@@ -1369,6 +1346,20 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     function Error:ErrorManager(msgError, funcName)
         Utils:Print(msgError..", arrêt du script", funcName, "error")
         global:finishScript()
+    end
+
+    -- Monsters
+
+    function Monsters:GetHighestLifeMonstersZone(subArea)
+        local monstersZone = Zone:GetSubAreaMonsters(subArea)
+        local maxLife = 0
+        for _, v in pairs(monstersZone) do
+            local infoMonsters = Monsters:GetMonstersInfoByGrade(v, 5)
+            if infoMonsters.lifePoints > maxLife then
+                maxLife = infoMonsters.lifePoints
+            end
+        end
+        return maxLife
     end
 
     -- Math
