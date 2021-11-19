@@ -59,6 +59,18 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
 
     Movement.iZaapOpen = false
 
+    function Monsters:GetHighestLifeMonstersZone(subArea)
+        local monstersZone = Zone:GetSubAreaMonsters(subArea)
+        local maxLife = 0
+        for _, v in pairs(monstersZone) do
+            local infoMonsters = Monsters:GetMonstersInfoByGrade(v, 5)
+            if infoMonsters.lifePoints > maxLife then
+                maxLife = infoMonsters.lifePoints
+            end
+        end
+        return maxLife
+    end
+
     function Movement:Move()
         Packet:SubManager({["ZaapDestinationsMessage"] = CB_ZaapDestinations, ["LeaveDialogMessage"] = CB_LeaveDialogMessage}, true)
         self.inBank = false
@@ -161,7 +173,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                 else
                     --Utils:Dump(GATHER)
                     Action:Gather()
-                    --map:gather()
+                    map:gather()
                 end
 
                 Movement:RoadZone(self.mapIdToRoad)
@@ -192,10 +204,10 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
         self.mapIdToRoad = {}
         self.pathMine = {}
         self.monsterDropItem = {}
-        local mstrDrop = Monsters:GetMonsterIdByDropId(Craft.ItemsToDrop[Craft.currentIndexItemToDrop].itemId)
+        local mstrDrop = Monsters:GetMonsterIdByDropId(Craft.itemsToDrop[Craft.currentIndexItemToDrop].itemId)
 
         local function getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
-            Utils:Print("Get rand subArea")
+            --Utils:Print("Get rand subArea")
             self.mapIdToRoad = {}
             self.pathMine = {}
             if Utils:LenghtOfTable(self.logFarmedZone) > 10 then
@@ -208,7 +220,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
 
             for kSubAreaId, vMaps in pairs(subAreaContainsResToFarm) do
                 if i == rand then
-                    Utils:Print(Utils:LenghtOfTable(subAreaContainsResToFarm), "dev")
+                    --Utils:Print(Utils:LenghtOfTable(subAreaContainsResToFarm), "dev")
 
                     if Utils:LenghtOfTable(subAreaContainsResToFarm) > 1 then
                         local iStep = 0
@@ -256,7 +268,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             end
         end
 
-        if mstrDrop ~= nil and Utils:LenghtOfTable(mstrDrop) > 0 then
+        if mstrDrop ~= nil and Utils:LenghtOfTable(mstrDrop) > 0 and Craft.itemsToDrop[Craft.currentIndexItemToDrop].itemId ~= 311 then
             Utils:Print("Fight mode", "ConfigRoad")
             self.dropAction = "fight"
             for _, v in pairs(mstrDrop) do
@@ -275,11 +287,11 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
 
                         local iDiffT = 1
 
-                        local monsterInfo = Monsters:GetMonstersInfoByGrade(v, 5)
+                        local maxLifePoint = Monsters:GetHighestLifeMonstersZone(favArea)
 
-                        local diffPercent = Math:DiffPercent(character:maxLifePoints(), monsterInfo.lifePoints)
+                        local diffPercent = Math:DiffPercent(character:maxLifePoints(), maxLifePoint)
 
-                        if monsterInfo.lifePoints < 500 then
+                        if maxLifePoint < 500 then
                             iDiffT = 2
                         end
 
@@ -324,18 +336,17 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             self.dropAction = "gather"
             GATHER = {}
 
-            for _, vToDrop in pairs(Craft.ItemsToDrop) do
+            for _, vToDrop in pairs(Craft.itemsToDrop) do
                 local isMonsterDrop = Monsters:GetMonsterIdByDropId(vToDrop.itemId)
 
-                if #isMonsterDrop == 0 then
+                if #isMonsterDrop == 0 or vToDrop.itemId == 311 then
                     for k, v in pairs(Info.gatherInfo) do
                         if v.objectId == vToDrop.itemId then
                             if job:level(v.jobId) < v.minLvlToFarm then
-                                Utils:Print(job:level(v.jobId), "Dev")
-                                Utils:Print(v.minLvlToFarm, "Dev")
+                                Utils:Print("Vous n'avez pas le niveau requis pour farm la ressouce " .. inventory:itemNameId(v.objectId), "Info")
+
                                 local possibleResFarm = {}
 
-                                Utils:Print("Vous n'avez pas le niveau requis pour farm la ressouce " .. inventory:itemNameId(v.objectId), "Info")
                                 for _, v2 in pairs(Info.gatherInfo) do
                                     if v2.jobId == v.jobId and job:level(v.jobId) >= v2.minLvlToFarm then
                                         table.insert(possibleResFarm, v2)
@@ -358,7 +369,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
 
                                 table.insert(GATHER, gatherIdToFarm)
 
-                                if Craft.ItemsToDrop[Craft.currentIndexItemToDrop].itemId == v.objectId then
+                                if Craft.itemsToDrop[Craft.currentIndexItemToDrop].itemId == v.objectId then
                                     local subAreaContainsResToFarm = Zone:RetrieveSubAreaContainingRessource(gatherIdToFarm)
 
                                     getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
@@ -374,7 +385,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                                     end
                                 end
 
-                                if Craft.ItemsToDrop[Craft.currentIndexItemToDrop].itemId == v.objectId then
+                                if Craft.itemsToDrop[Craft.currentIndexItemToDrop].itemId == v.objectId then
                                     local subAreaContainsResToFarm = Zone:RetrieveSubAreaContainingRessource(gatherIdToFarm)
 
                                     getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
@@ -404,10 +415,10 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                 local tentaNewMap = 0
 
                 while self:AlreadyCrossedRZNextMapId(tblMapId, self.RZNextMapId) or self:ExcludeMapId(self.RZNextMapId) do
-                    Utils:Print("Map AlreadyCrossed", "dev")
+                    --Utils:Print("Map AlreadyCrossed", "dev")
                     self.RZNextMapId = tblMapId[global:random(1, #tblMapId)]
                     tentaNewMap = tentaNewMap + 1
-                    if tentaNewMap == 50 then
+                    if tentaNewMap == 20 then
                         Craft.selectedItemToFarm = false
                         Time.TimerInitialized = false
                         self.RoadLoaded = false
@@ -421,7 +432,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                     end
                 end
 
-                Utils:Print("RZNextMapId = " .. self.RZNextMapId, "dev")
+                --Utils:Print("RZNextMapId = " .. self.RZNextMapId, "dev")
 
                 table.insert(self.logRZNextMapId, self.RZNextMapId)
 
@@ -467,8 +478,9 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                     PathFinder:MovePath(self.pathMine)
                     global:delay(1000)
                 else
-                    for _ = 1, 10 do
+                    for _ = 1, 5 do
                         map:moveToward(self.RZNextMapId)
+                        map:moveRandomToward(self.RZNextMapId)
                     end
                 end
 
@@ -722,6 +734,8 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             end
         end
 
+        self:SortHarvestableElementsByDist()
+
         for _, vHarvestableElement in pairs(self.harvestableElements) do
             map:door(vHarvestableElement.cellId)
         end
@@ -730,13 +744,26 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     end
 
     function Action:SortHarvestableElementsByDist()
-        for _, vHarvestableElement in pairs(self.harvestableElements) do
-            vHarvestableElement.dist = Utils:ManhattanDistanceCellId(map:currentCell(), vHarvestableElement.cellId)
+        local startCell = map:currentCell()
+        local tmpSort = {}
+
+        while #self.harvestableElements > 0 do
+            local minDist = 1000
+            local iTmp = 1
+            for i = 1, #self.harvestableElements do
+                local dist = Utils:ManhattanDistanceCellId(startCell, self.harvestableElements[i].cellId)
+                if dist < minDist then
+                    iTmp = i
+                    minDist = dist
+                end
+            end
+
+            startCell = self.harvestableElements[iTmp].cellId
+            table.insert(tmpSort, self.harvestableElements[iTmp])
+            table.remove(self.harvestableElements, iTmp)
         end
 
-        table.sort(self.harvestableElements, function(a, b)
-            return a.dist < b.dist
-        end)
+        self.harvestableElements = tmpSort
     end
 
     function Action:OpenBags()
@@ -775,7 +802,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     Craft.checkPossibleCraft = false
     Craft.canCraft = false
 
-    Craft.ItemsToDrop = {}
+    Craft.itemsToDrop = {}
     Craft.selectedItemToFarm = false
     Craft.currentIndexItemToDrop = 0
 
@@ -784,8 +811,6 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     Craft.currentWorkshopId = 0
 
     Craft.currentCraft = {}
-
-    Craft.craftQueue = {}
 
     function Craft:CraftManager()
         if not self.propertiesInit then
@@ -805,7 +830,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
         if not self.canCraft and self.checkPossibleCraft then
             local allItemDroped = true
 
-            for _, vDrop in pairs(self.ItemsToDrop) do
+            for _, vDrop in pairs(self.itemsToDrop) do
                 if inventory:itemCount(vDrop.itemId) < vDrop.itemsToRetrieve then
                     allItemDroped = false
                 end
@@ -826,18 +851,18 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             end
 
             while not self.selectedItemToFarm do
-                if Utils:LenghtOfTable(self.ItemsToDrop) > 1 then
-                    local rand = global:random(1, Utils:LenghtOfTable(self.ItemsToDrop))
+                if Utils:LenghtOfTable(self.itemsToDrop) > 1 then
+                    local rand = global:random(1, Utils:LenghtOfTable(self.itemsToDrop))
 
-                    if rand ~= self.currentIndexItemToDrop and inventory:itemCount(self.ItemsToDrop[rand].itemId) < self.ItemsToDrop[rand].itemsToRetrieve then
+                    if rand ~= self.currentIndexItemToDrop and inventory:itemCount(self.itemsToDrop[rand].itemId) < self.itemsToDrop[rand].itemsToRetrieve then
                         self.currentIndexItemToDrop = rand
                         self.selectedItemToFarm = true
-                        Utils:Print("Go drop "..inventory:itemNameId(self.ItemsToDrop[rand].itemId), "Info")
+                        Utils:Print("Go drop "..inventory:itemNameId(self.itemsToDrop[rand].itemId), "Info")
                     end
                 else
                     self.currentIndexItemToDrop = 1
                     self.selectedItemToFarm = true
-                    Utils:Print("Go drop "..inventory:itemNameId(self.ItemsToDrop[1].itemId), "Info")
+                    Utils:Print("Go drop "..inventory:itemNameId(self.itemsToDrop[1].itemId), "Info")
                 end
             end
         end
@@ -907,9 +932,10 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
 
     function Craft:GetCurrentWorkShopInfo(area)
         local workshopAreaInfo = nil
+        Utils:Print(job:name(self.currentCraft.jobId), "Craft")
 
         for kJob, vWorkShopAreaInfo in pairs(Movement.WorkshopInfo) do
-            if Utils:Equal(Worker.currentJob, kJob) then
+            if Utils:Equal(job:name(self.currentCraft.jobId), kJob) then
                 workshopAreaInfo = vWorkShopAreaInfo
                 break
             end
@@ -919,18 +945,10 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             if Utils:Equal(area, "rand") then
                 -- A faire !!!
             else
-                local workshopInfo = nil
-
                 for kArea, vWorkShopInfo in pairs(workshopAreaInfo) do
-
                     if Utils:Equal(kArea, area) then
-                        workshopInfo = vWorkShopInfo
-                        break
+                        return vWorkShopInfo
                     end
-                end
-
-                if workshopInfo ~= nil then
-                    return workshopInfo
                 end
             end
         end
@@ -941,48 +959,98 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     function Craft:CheckCraft()
         local function calculItemToPick(vIng)
             local maxItemInInventory = self:CalculMaxIngredientsInInventory(self:CalculTotalWeightIng(self.currentCraft.ingredients), vIng.quantity)
-
-
             if maxItemInInventory / vIng.quantity > self.currentCraft.nbCraftBeforeNextCraft then
                 maxItemInInventory = self.currentCraft.nbCraftBeforeNextCraft * vIng.quantity
             end
             return maxItemInInventory
         end
+
+        local function checkThatAllIngToCraft(craft)
+            for _, vIng in pairs(craft.ingredients) do
+                if exchange:storageItemQuantity(vIng.ingredientId) < calculItemToPick(vIng) then
+                    return false
+                end
+            end
+            return true
+        end
+
+        local function addAllMissingIngToDrop(craft)
+            for _, vIng in pairs(craft.ingredients) do
+                local nbItemToPick = calculItemToPick(vIng)
+                if exchange:storageItemQuantity(vIng.ingredientId) < nbItemToPick then
+                    local craftInfo = self:GetCraftInfo(vIng.ingredientId)
+                    if craftInfo ~= nil then
+                        Utils:Print("Le craft (" .. inventory:itemNameId(self.currentCraft.craftId) .. ") nécéssite de fabriquée l'objet (" .. inventory:itemNameId(craftInfo.craftId) .. ") du métier " .. job:name(craftInfo.jobId), "Craft")
+                        craftInfo.nbCraftBeforeNextCraft = nbItemToPick
+
+                        if job:level(craftInfo.jobId) < craftInfo.craftLvl then
+                            Utils:Print("Votre métier " .. job:name(craftInfo.jobId) .. " n'a pas le niveau requis pour crafter l'objet (" .. inventory:itemNameId(craftInfo.craftId) .. ")", "craft")
+                            self.currentCraft = self:GetHighestLevelRecipeCanBeCrafted(job:name(craftInfo.jobId))
+                            self.currentCraft.nbCraftBeforeNextCraft = 50
+                            Utils:Print("Vous allez fabriquée l'objet (" .. inventory:itemNameId(self.currentCraft.craftId) .. ") pour monter le niveau de votre métier " .. job:name(self.currentCraft.jobId), "craft")
+                        else
+                            self.currentCraft = craftInfo
+                        end
+
+                        addAllMissingIngToDrop(self.currentCraft)
+                    else
+                        local ins = {}
+                        ins.itemId = vIng.ingredientId
+                        ins.itemsToRetrieve = nbItemToPick
+                        table.insert(self.itemsToDrop, ins)
+                    end
+                end
+            end
+        end
+
         Utils:Print("Check craft", "Info")
 
         self.currentCraft = self:GetCurrentCraft()
 
-        -- Verif si ingredient = craft a faire
+        self.itemsToDrop = {}
 
-        self.canCraft = true
+        addAllMissingIngToDrop(self.currentCraft)
 
-        for _, vIng in pairs(self.currentCraft.ingredients) do
-            local maxItemInInventory = calculItemToPick(vIng)
-
-            if exchange:storageItemQuantity(vIng.ingredientId) < maxItemInInventory then
-                self.canCraft = false
-                local ins = {}
-                ins.itemId = vIng.ingredientId
-                ins.itemsToRetrieve = maxItemInInventory
-                table.insert(self.ItemsToDrop, ins)
-            end
-        end
-
-        if self.canCraft then
+        if checkThatAllIngToCraft(self.currentCraft) then
             Utils:Print("L'objet " .. inventory:itemNameId(self.currentCraft.craftId) .. " peut être crafter !", "Craft")
+            self.canCraft = true
 
+            local toPick = {}
             for _, vIng in pairs(self.currentCraft.ingredients) do
-                exchange:getItem(vIng.ingredientId, calculItemToPick(vIng))
+                table.insert(toPick, {ingredientId = vIng.ingredientId, quantity = calculItemToPick(vIng)})
+            end
+
+            for _, vIng in pairs(toPick) do
+                exchange:getItem(vIng.ingredientId, vIng.quantity)
             end
 
             Movement.podsMaxBeforeBank = 101
         else
+            self.canCraft = false
             Movement.podsMaxBeforeBank = global:random(Config.minPercentPodsBeforeBank, Config.maxPercentPodsBeforeBank)
             Utils:Print("Prochain retour a la banque a " .. Movement.podsMaxBeforeBank .. "% pods", "Info")
         end
 
+        --Utils:Dump(self.itemsToDrop)
         self.checkPossibleCraft = true
         global:leaveDialog()
+    end
+
+    function Craft:GetHighestLevelRecipeCanBeCrafted(jobName)
+        local highestCraft
+        for kJob, vTblCraft in pairs(self.CraftInfo) do
+            if Utils:Equal(kJob, jobName) then
+                for _, vCraft in pairs(vTblCraft) do
+                    local craftInfo = self:GetCraftInfo(vCraft.craftId)
+
+                    if job:level(craftInfo.jobId) >= craftInfo.craftLvl then
+                        highestCraft = craftInfo
+                    else
+                        return highestCraft
+                    end
+                end
+            end
+        end
     end
 
     function Craft:CalculTotalWeightIng(tblIng)
@@ -1000,7 +1068,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     end
 
     function Craft:CalculMaxPossibleItemToCraft()
-        local init = false
+        local init = true
         local maxItem = 0
 
         for _, vIngInfo in pairs(self.currentCraft.ingredients) do
@@ -1010,7 +1078,6 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                 tmp = exchange:storageItemQuantity(vIngInfo.ingredientId) / vIngInfo.quantity
             end
 
-
             if init then
                 maxItem = math.floor(tmp)
             else
@@ -1019,9 +1086,8 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                 end
 
             end
-            init = true
+            init = false
         end
-
 
         return maxItem
     end
@@ -1148,6 +1214,11 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     Worker.init = false
     Worker.nextTimeToReassignJob = ""
     Worker.currentJob = ""
+    Worker.enumJobSkillId = {
+        ["Mineur"] = {32, 48},
+        ["Bijoutier"] = {12},
+        ["Bricoleur"] = {171},
+    }
 
     function Worker:WorkManager()
         if not self.init or self.nextTimeToReassignJob == os.date("%H:%M") then
@@ -1202,6 +1273,18 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
         end
     end
 
+    function Worker:GetJobNameBySkillId(skillId)
+        for kJob, vTblSkillId in pairs(self.enumJobSkillId) do
+            for _, vSkillId in pairs(vTblSkillId) do
+                if Utils:Equal(vSkillId, skillId) then
+                    return kJob
+                end
+            end
+        end
+        Utils:Print("Aucun job trouver pour le skillId (" .. skillId .. ") !", "Craft:GetJobNameBySkillId", "error")
+        return ""
+    end
+
     -- Time
 
     Time.TimerInitialized = false
@@ -1234,10 +1317,8 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
 
     function Time:DiffTime(hStart, mStart, hFinish, mFinish)
         local diffTimeMin = 0
-        while true do
-            if tonumber(hStart) == tonumber(hFinish) and tonumber(mStart) == tonumber(mFinish) then
-                return diffTimeMin
-            end
+        local cond = (tonumber(hStart) == tonumber(hFinish)) and (tonumber(mStart) == tonumber(mFinish))
+        while not cond do
             if tonumber(mStart) >= 60 then
                 hStart = hStart + 1
                 mStart = 0
@@ -1247,7 +1328,12 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             end
             diffTimeMin = diffTimeMin + 1
             mStart = mStart + 1
+            cond = (tonumber(hStart) == tonumber(hFinish)) and (tonumber(mStart) == tonumber(mFinish))
+            if diffTimeMin > 2880 then
+                return diffTimeMin
+            end
         end
+        return diffTimeMin
     end
 
     -- Packet

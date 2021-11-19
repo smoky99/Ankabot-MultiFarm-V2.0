@@ -1,6 +1,5 @@
 local currentDirectory = global:getCurrentScriptDirectory()
 
-Utils = require("lanes").configure()
 Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
 Movement = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Movement.lua")
 JSON = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\JSON.lua")
@@ -39,18 +38,20 @@ RC_INCLUDE_CELLID = false
 BannedMapId = {}
 
 function move()
-    if not Mapper.initialized then
-        developer:registerMessage("ChangeMapMessage", CB_ChangeMapMessage)
-        developer:registerMessage("MapComplementaryInformationsDataInHavenBagMessage", newMapAction)
-        developer:registerMessage("MapComplementaryInformationsDataInHouseMessage", newMapAction)
-        developer:registerMessage("MapComplementaryInformationsDataMessage", newMapAction)
-        developer:registerMessage("MapComplementaryInformationsAnomalyMessage", newMapAction)
-        developer:registerMessage("MapComplementaryInformationsBreachMessage", newMapAction)
-        developer:registerMessage("MapComplementaryInformationsWithCoordsMessage", newMapAction)
-        Mapper.initialized = true
-    end
 
-    Mapper:ZoneMapper()
+    Utils:Dump(Zone:RetrieveSubAreaContainingRessource(84))
+    -- if not Mapper.initialized then
+    --     developer:registerMessage("ChangeMapMessage", CB_ChangeMapMessage)
+    --     developer:registerMessage("MapComplementaryInformationsDataInHavenBagMessage", newMapAction)
+    --     developer:registerMessage("MapComplementaryInformationsDataInHouseMessage", newMapAction)
+    --     developer:registerMessage("MapComplementaryInformationsDataMessage", newMapAction)
+    --     developer:registerMessage("MapComplementaryInformationsAnomalyMessage", newMapAction)
+    --     developer:registerMessage("MapComplementaryInformationsBreachMessage", newMapAction)
+    --     developer:registerMessage("MapComplementaryInformationsWithCoordsMessage", newMapAction)
+    --     Mapper.initialized = true
+    -- end
+
+    -- Mapper:ZoneMapper()
 end
 
 function Mapper:ZoneMapper()
