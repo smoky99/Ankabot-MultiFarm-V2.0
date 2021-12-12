@@ -19,7 +19,6 @@ Config.wortimeJob = {
     },
     ["Vendredi"] = {
         { startTime = "06:00", finishTime = "23:59", job = "Bûcheron" },
-
     },
     ["Samedi"] = {
         { startTime = "06:00", finishTime = "23:59", job = "Bijoutier" }
