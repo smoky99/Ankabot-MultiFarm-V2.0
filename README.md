@@ -15,9 +15,10 @@
 
 ## Important
 
-1. Ne pas mettre de craft avec des ingrédients de donjon
-2. Avoir un perso pouvant gèrer les combat sur les monstres droppant les ingrédients de vos craft
-3. Le script et en bêta il peux y avoir des bugs
+1. Avoir les base de la programmation pour configurer le script, sinon demander de l'aide dans le salon entraide du discord
+2. Ne pas mettre de craft avec des ingrédients de donjon
+3. Avoir un perso pouvant gèrer les combat sur les monstres droppant les ingrédients de vos craft
+4. Le script et en bêta il peux y avoir des bugs
 
 ## Configuration
 
