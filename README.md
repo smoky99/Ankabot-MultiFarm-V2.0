@@ -4,7 +4,7 @@
 
 1. Une configuration plus simple
 2. La gestion des recette avec ingredients a droper sur les monstres
-3. Les "path" sont full random gèrer par le script
+3. Les "path" full random gèrer par le script
 
 ## Les méthodes a venir
 
