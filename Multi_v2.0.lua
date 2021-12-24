@@ -1092,13 +1092,22 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                 if vCraft.currentCraftedItems == nil then
                     vCraft.currentCraftedItems = 0
                 end
+
+                if vCraft.minLvlToCraft == nil then
+                    vCraft.minLvlToCraft = 1
+                end
+
+                if vCraft.maxLvlToCraft == nil then
+                    vCraft.maxLvlToCraft = 200
+                end
             end
         end
     end
 
     function Craft:GetCurrentCraft()
         for _, v in pairs(self:GetJobCraft()) do
-            if v.currentCraftedItems < v.nbCraftBeforeNextCraft and job:level(Craft:GetJobId(v.craftId)) >= Craft:GetLevel(v.craftId) then
+            local jobLevel = job:level(Craft:GetJobId(v.craftId))
+            if v.currentCraftedItems < v.nbCraftBeforeNextCraft and jobLevel >= Craft:GetLevel(v.craftId) and ( jobLevel >= v.minLvlToCraft and jobLevel <= v.maxLvlToCraft ) then
                 local ret = Craft:GetCraftInfo(v.craftId)
                 Utils:Print("L'objet " .. inventory:itemNameId(v.craftId) .. " est séléctionner !", "Craft")
                 ret.craftName = v.craftName

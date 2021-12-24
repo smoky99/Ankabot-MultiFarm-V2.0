@@ -28,6 +28,9 @@ Config.wortimeJob = {
     }
 }
 
+
+-- maxCraftPerDay non implémenter
+
 Config.craft = {
     ["Bricoleur"] = {
         {
@@ -64,7 +67,9 @@ Config.craft = {
             craftName = "Substrat de buisson",
             craftId = 2539,
             nbCraftBeforeNextCraft = 100,
-            maxCraftPerDay = 1000
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
         },
         {
             craftName = "Substrat de bocage",
