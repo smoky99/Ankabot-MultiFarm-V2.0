@@ -22,6 +22,7 @@
 
 ## Configuration
 
+1. Télécharger ça https://github.com/yaya3636/Yaya_Tools et placer tout les fichier dans un dossier nommer YAYA a la racine d'ankabot
 1. Déplacer le dossier YAYA a la racine du bot ( a l'emplacement de Ankabot.exe )
 2. Faites votre configuration dans le fichier Multi_Config.lua
 3. Charger le fichier Multi_v2.0.lua dans ankabot
