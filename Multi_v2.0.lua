@@ -590,22 +590,23 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
         if map:currentMap() ~= "0,0" then
             source = 0
         else
-            map:door(zaapCellId)
+            --map:door(zaapCellId)
         end
 
         developer:suspendScriptUntil("ZaapDestinationsMessage", 100, false)
 
-        local closestZaap = self:ClosestZaap(mapIdDest)
+        local closestZaap = map:closestZaap(mapIdDest, Config.zaapExcepted) --self:ClosestZaap(mapIdDest)
 
         if closestZaap == 0 then
             map:changeMap('havenbag')
         else
-            Packet:SendPacket("TeleportRequestMessage", function(msg)
-                msg.sourceType = source
-                msg.destinationType = 0
-                msg.mapId = closestZaap
-                return msg
-            end)
+            map:toZaap(closestZaap, source)
+            -- Packet:SendPacket("TeleportRequestMessage", function(msg)
+            --     msg.sourceType = source
+            --     msg.destinationType = 0
+            --     msg.mapId = closestZaap
+            --     return msg
+            -- end)
         end
         global:delay(1000)
     end

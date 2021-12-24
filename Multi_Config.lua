@@ -95,5 +95,9 @@ Config.craft = {
     }
 }
 
+Config.zaapExcepted = {
+
+}
+
 
 return Config
