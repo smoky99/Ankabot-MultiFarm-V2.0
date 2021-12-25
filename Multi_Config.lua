@@ -4,7 +4,7 @@ Config.minPercentPodsBeforeBank, Config.maxPercentPodsBeforeBank = 70, 90
 
 Config.minPercentLifeBeforeFight = 80
 
-Config.houseMode = true
+Config.houseMode = false -- Mettre true pour activer le retour maison
 
 Config.wortimeJob = {
     ["Lundi"] = {
