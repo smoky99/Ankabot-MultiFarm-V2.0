@@ -148,6 +148,4 @@ Info.bagsId = {
     16539
 }
 
-
-
 return Info

@@ -4,6 +4,8 @@ Config.minPercentPodsBeforeBank, Config.maxPercentPodsBeforeBank = 70, 90
 
 Config.minPercentLifeBeforeFight = 80
 
+Config.houseMode = true
+
 Config.wortimeJob = {
     ["Lundi"] = {
         { startTime = "05:14", finishTime = "23:59", job = "Bûcheron" },
@@ -21,13 +23,12 @@ Config.wortimeJob = {
         { startTime = "06:00", finishTime = "23:59", job = "Bûcheron" },
     },
     ["Samedi"] = {
-        { startTime = "06:00", finishTime = "23:59", job = "Bijoutier" }
+        { startTime = "06:00", finishTime = "23:59", job = "Bûcheron" }
     },
     ["Dimanche"] = {
         { startTime = "00:02", finishTime = "23:50", job = "Mineur" },
     }
 }
-
 
 -- maxCraftPerDay non implémenter
 
@@ -63,6 +64,14 @@ Config.craft = {
         },
     },
     ["Bûcheron"] = {
+        {
+            craftName = "Planche Agglomérée",
+            craftId = 16489,
+            nbCraftBeforeNextCraft = 100,
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
+        },
         {
             craftName = "Substrat de buisson",
             craftId = 2539,
@@ -104,5 +113,17 @@ Config.zaapExcepted = {
 
 }
 
+Config.houseInfo = {
+    houseOwnerPseudo = "pseudoDuCompteMaison#1234", -- Vous pouvez récupérer votre pseudo dans l'onglet social de dofus
+    houseOutsideMapId = 000000000, -- MapId éxtérieure de la maison
+    houseDoorCellId = 000, -- CellId de la porte
+    housePassword = 000000, -- Mot de passe de la porte
+    chestCellId = 000, -- CellId du coffre
+    chestPassword = 000000, -- Mot de passe du coffre, mettre -1 si le coffre appartient au bot
+    inHousePath = {
+        { map = 000000000, door = "316" }, -- Si votre maison a plusieurs pièces déplacer le bot jusqu'au coffre avec door pour une porte ou path si c'est un soleil
+        { map = 000000000, inTheTrunkMap = true } -- Une fois arriver sur la map du coffre mettre inTheTrunkMap = true
+    }
+}
 
 return Config

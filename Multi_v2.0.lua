@@ -30,6 +30,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     Movement.zaapDestinations = {}
 
     Movement.inBank = false
+    Movement.inHouse = false
     Movement.printBank = false
 
     Movement.configRoad = false
@@ -565,19 +566,59 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
         if not self.tpBank then
             self:HavenBag()
 
+            if Config.houseMode then
+                bankMapId = Config.houseInfo.houseOutsideMapId
+            end
+
             if map:currentMap() == "0,0" then
                 self.tpBank = true
                 Movement:UseZaap(bankMapId)
             end
         end
 
+        if Config.houseMode and self.inHouse then
+            local inTheTrunkMap = false
+
+            for _, v in pairs(Config.houseInfo.inHousePath) do
+                if v.map == map:currentMapId() then
+                    if v.inTheTrunkMap then
+                        inTheTrunkMap = true
+                        break
+                    end
+
+                    if v.door then
+                        map:door(tonumber(v.door))
+                    elseif v.path then
+                        map:changeMap(v.path)
+                    end
+                end
+            end
+
+            if inTheTrunkMap then
+                self.inBank = true
+                self.printBank = false
+                self.tpBank = false
+                self.inHouse = false
+                if Config.houseInfo.chestPassword < 0 then
+                    map:door(Config.houseInfo.chestCellId)
+                else
+                    map:lockedStorage(Config.houseInfo.chestCellId, Config.houseInfo.chestPassword)
+                end
+                exchange:putAllItems()
+                return Craft:CraftManager()
+            end
+        end
+
         Movement:LoadRoad(bankMapId)
 
-        if map:currentMapId() == bankMapId then
+        if map:currentMapId() == bankMapId and not Config.houseMode then -- Bank
             self.inBank = true
             self.printBank = false
             self.tpBank = false
             self:UseBank()
+        elseif map:currentMapId() == bankMapId and Config.houseMode then -- Maison
+            self.inHouse = true
+            map:lockedHouse(Config.houseInfo.houseDoorCellId, Config.houseInfo.housePassword, Config.houseInfo.houseOwnerPseudo)
         else
             Movement:MoveNext()
         end
@@ -913,6 +954,8 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
 
                     self.checkPossibleCraft = false
                     self:CraftManager()
+                elseif map:currentMap() == "0,0" then
+                    Movement:UseZaap(self.currentWorkshopMapId)
                 else
                     Movement:MoveNext()
                 end
@@ -1028,6 +1071,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
         --Utils:Dump(self.itemsToDrop)
         self.checkPossibleCraft = true
         global:leaveDialog()
+        map:changeMap('havenbag')
     end
 
     function Craft:GetHighestLevelRecipeCanBeCrafted(jobName)
@@ -1104,9 +1148,11 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
         end
     end
 
-    function Craft:GetCurrentCraft()
+    function Craft:GetCurrentCraft(updateLimite)
+        local jobLevel
         for _, v in pairs(self:GetJobCraft()) do
-            local jobLevel = job:level(Craft:GetJobId(v.craftId))
+            jobLevel = job:level(Craft:GetJobId(v.craftId))
+
             if v.currentCraftedItems < v.nbCraftBeforeNextCraft and jobLevel >= Craft:GetLevel(v.craftId) and ( jobLevel >= v.minLvlToCraft and jobLevel <= v.maxLvlToCraft ) then
                 local ret = Craft:GetCraftInfo(v.craftId)
                 Utils:Print("L'objet " .. inventory:itemNameId(v.craftId) .. " est séléctionner !", "Craft")
@@ -1116,8 +1162,12 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                 return ret
             end
         end
+        if updateLimite then
+            Utils:Print("Aucun craft n'a pu être séléctionner vérifier d'avoir ajouter des craft pour le métier " .. Worker.currentJob .. " de niveau inférieur ou égal a " .. jobLevel, "Craft", "error")
+            global:finishScript()
+        end
         self:UpdateLimitCraft()
-        return self:GetCurrentCraft()
+        return self:GetCurrentCraft(true)
     end
 
     function Craft:UpdateLimitCraft()
