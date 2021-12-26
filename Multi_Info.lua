@@ -60,6 +60,31 @@ Info.gatherInfo = {
     Mais = { name = "Maïs", gatherId = 260, objectId = 16454, jobId = 28, minLvlToFarm = 160 },
     Millet = { name = "Millet", gatherId = 261, objectId = 16456, jobId = 28, minLvlToFarm = 180 },
     Frostiz = { name = "Frostiz", gatherId = 134, objectId = 11109, jobId = 28, minLvlToFarm = 200 },
+    -- Pêcheur
+    Goujon = { name = "Goujon", gatherId = 75, objectId = 1782, jobId = 36, minLvlToFarm = 1 },
+    Greuvette = { name = "Greuvette", gatherId = 71, objectId = 598, jobId = 36, minLvlToFarm = 10 },
+    Truite = { name = "Truite", gatherId = 74, objectId = 1844, jobId = 36, minLvlToFarm = 20 },
+    Crabe = { name = "Crab Sourimis", gatherId = 77, objectId = 1757, jobId = 36, minLvlToFarm = 30 },
+    PoissonChaton = { name = "Poisson-Chaton", gatherId = 76, objectId = 603, jobId = 36, minLvlToFarm = 40 },
+    PoissonPane = { name = "Poisson Pané", gatherId = 78, objectId = 1750, jobId = 36, minLvlToFarm = 50 },
+    CarpeDiem = { name = "Carpe d'Iem", gatherId = 79, objectId = 1794, jobId = 36, minLvlToFarm = 60 },
+    SardineBrillante = { name = "Sardine Brillante", gatherId = 81, objectId = 1805, jobId = 36, minLvlToFarm = 70 },
+    Brochet = { name = "Brochet", gatherId = 263, objectId = 1847, jobId = 36, minLvlToFarm = 80 },
+    Kralamoure = { name = "Kralamoure", gatherId = 264, objectId = 600, jobId = 36, minLvlToFarm = 90 },
+    Anguille = { name = "Anguille", gatherId = 265, objectId = 16461, jobId = 36, minLvlToFarm = 100 },
+    DoradeGrise = { name = "Dorade Grise", gatherId = 266, objectId = 16463, jobId = 36, minLvlToFarm = 110 },
+    Perche = { name = "Perche", gatherId = 267, objectId = 1801, jobId = 36, minLvlToFarm = 120 },
+    RaieBleue = { name = "Raie Bleue", gatherId = 268, objectId = 1784, jobId = 36, minLvlToFarm = 130 },
+    Lotte = { name = "Lotte", gatherId = 269, objectId = 16465, jobId = 36, minLvlToFarm = 140 },
+    RequinMarteauFaucille = { name = "Requin Marteau-Faucille", gatherId = 270, objectId = 602, jobId = 36, minLvlToFarm = 150 },
+    BarRikain = { name = "Bar Rikain", gatherId = 271, objectId = 1779, jobId = 36, minLvlToFarm = 160 },
+    Morue = { name = "Morue", gatherId = 272, objectId = 16467, jobId = 36, minLvlToFarm = 170 },
+    Tanche = { name = "Tanche", gatherId = 273, objectId = 16469, jobId = 36, minLvlToFarm = 180 },
+    Espadon = { name = "Espadon", gatherId = 274, objectId = 16471, jobId = 36, minLvlToFarm = 190 },
+    PichonDencre = { name = "Pichon d'encre", gatherId = 365, objectId = 23825, jobId = 36, minLvlToFarm = 200 },
+    Poisskaille = { name = "Poisskaille", gatherId = 132, objectId = 11106, jobId = 36, minLvlToFarm = 200 },
+
+
     -- Autres
     Puits = { name = "Puits", gatherId = 84, objectId = 311, jobId = 2, minLvlToFarm = 1 }
 }
@@ -146,6 +171,137 @@ Info.bagsId = {
     16537,
     16538,
     16539
+}
+
+Info.workshopInfo = {
+    ["Mineur"] = {
+        skillId = {32, 48},
+        ["Astrub"] = { mapId = 192939010, workshopId = {
+            ["32"] = { -- Fondre
+                515660,
+                515666
+            },
+            ["48"] = { -- Polir
+                515702
+            }
+        }}
+    },
+    ["Bûcheron"] = {
+        skillId = {101},
+        ["Astrub"] = { mapId = 192940034, workshopId = {
+            ["101"] = {
+                516166,
+                515493
+            }
+        }}
+    },
+    ["Alchimiste"] = {
+        skillId = {23},
+        ["Astrub"] = { mapId = 192937988, workshopId = {
+            ["23"] = {
+                515520,
+                515549,
+                515516
+            }
+        }}
+    },
+    ["Paysan"] = {
+        skillId = {27, 47},
+        ["Astrub"] = { mapId = 192937988, workshopId = {
+            ["27"] = { -- Cuire
+                514880,
+                514876
+            },
+            ["47"] = { -- Moudre
+                514878,
+                516162
+            },
+        }}
+    },
+    ["Pêcheur"] = {
+        skillId = {135},
+        ["Astrub"] = { mapId = 192937984, workshopId = {
+            ["135"] = {
+                515961,
+                516163
+
+            }
+        }}
+    },
+    ["Tailleur"] = {
+        skillId = {63},
+        ["Astrub"] = { mapId = 192940032, workshopId = {
+            ["63"] = {
+                515146,
+                515145,
+                515147
+            }
+        }}
+    },
+    ["Bijoutier"] = {
+        skillId = {12},
+        ["Astrub"] = { mapId = 192937990, workshopId = {
+            ["12"] = {
+                515740,
+                515739,
+                516168,
+                516169
+            }
+        }}
+    },
+    ["Cordonnier"] = {
+        skillId = {13},
+        ["Astrub"] = { mapId = 192939016, workshopId = {
+            ["13"] = {
+                515848,
+                516200,
+                515851
+            }
+        }}
+    },
+    ["Forgeron"] = {
+        skillId = {20},
+        ["Astrub"] = { mapId = 192939010, workshopId = {
+            ["20"] = {
+                516165
+            }
+        }}
+    },
+    ["Sculpteur"] = {
+        skillId = {15},
+        ["Astrub"] = { mapId = 192940034, workshopId = {
+            ["15"] = {
+                515963,
+                515964
+            }
+        }}
+    },
+    ["Bricoleur"] = {
+        skillId = {171},
+        ["Astrub"] = { mapId = 192940038, workshopId = {
+            ["171"] = {
+                516170,
+                515689
+            }
+        }}
+    },
+    ["Façonneur"] = {
+        skillId = {171, 297, 201, 380},
+        ["Astrub"] = { mapId = 192940040, workshopId = {
+            ["156"] = { -- Bouclier
+                515830
+            },
+            ["297"] = { -- Idole
+                516199
+            },
+            ["201"] = { -- Trophée
+                516172
+            },
+            ["380"] = { -- Prysmaradite
+                518018
+            }
+        }}
+    }
 }
 
 return Info

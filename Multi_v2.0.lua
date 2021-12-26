@@ -328,7 +328,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             for _, vToDrop in pairs(Craft.itemsToDrop) do
                 local isMonsterDrop = Monsters:GetMonsterIdByDropId(vToDrop.itemId)
 
-                if #isMonsterDrop == 0 or vToDrop.itemId == 311 then
+                --if #isMonsterDrop == 0 or vToDrop.itemId == 311 then
                     for k, v in pairs(Info.gatherInfo) do
                         if v.objectId == vToDrop.itemId then
                             if job:level(v.jobId) < v.minLvlToFarm then
@@ -384,7 +384,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                         end
                     end
 
-                end
+                --end
             end
 
         end
@@ -966,7 +966,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     function Craft:GetCurrentWorkShopInfo(area)
         local workshopAreaInfo = nil
 
-        for kJob, vWorkShopAreaInfo in pairs(Movement.WorkshopInfo) do
+        for kJob, vWorkShopAreaInfo in pairs(Info.workshopInfo) do
             if Utils:Equal(job:name(self.currentCraft.jobId), kJob) then
                 workshopAreaInfo = vWorkShopAreaInfo
                 break

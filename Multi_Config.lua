@@ -23,42 +23,20 @@ Config.wortimeJob = {
         { startTime = "06:00", finishTime = "23:59", job = "Bûcheron" },
     },
     ["Samedi"] = {
-        { startTime = "06:00", finishTime = "23:59", job = "Bûcheron" }
+        { startTime = "06:00", finishTime = "23:59", job = "Façonneur" }
     },
     ["Dimanche"] = {
-        { startTime = "00:02", finishTime = "23:50", job = "Mineur" },
+        { startTime = "00:02", finishTime = "23:50", job = "Façonneur" },
     }
 }
 
 -- maxCraftPerDay non implémenter
 
 Config.craft = {
-    ["Bricoleur"] = {
-        {
-            craftName = "Clef des Champs",
-            craftId = 8143,
-            nbCraftBeforeNextCraft = 50,
-            maxCraftPerDay = 1000
-        }
-    },
     ["Mineur"] = {
         {
             craftName = "Magnesite",
             craftId = 748,
-            nbCraftBeforeNextCraft = 50,
-            maxCraftPerDay = 1000
-        },
-    },
-    ["Bijoutier"] = {
-        {
-            craftName = "La destinée dorée",
-            craftId = 158,
-            nbCraftBeforeNextCraft = 50,
-            maxCraftPerDay = 1000
-        },
-        {
-            craftName = "Blessure du Sacrieur",
-            craftId = 1493,
             nbCraftBeforeNextCraft = 50,
             maxCraftPerDay = 1000
         },
@@ -103,6 +81,90 @@ Config.craft = {
         {
             craftName = "Potion de souvenir",
             craftId = 7652,
+            nbCraftBeforeNextCraft = 50,
+            maxCraftPerDay = 1000
+        },
+    },
+    ["Paysan"] = {
+        {
+            craftName = "Pain d'Incarnam",
+            craftId = 468,
+            nbCraftBeforeNextCraft = 50,
+            maxCraftPerDay = 1000
+        },
+    },
+    ["Pêcheur"] = {
+        {
+            craftName = "Goujon en tranche",
+            craftId = 1813,
+            nbCraftBeforeNextCraft = 100,
+            maxCraftPerDay = 1000
+        },
+    },
+    ["Tailleur"] = {
+        {
+            craftName = "Petit Sac en Laine de Boufton",
+            craftId = 1697,
+            nbCraftBeforeNextCraft = 50,
+            maxCraftPerDay = 1000
+        },
+        {
+            craftName = "Le Floude",
+            craftId = 8533,
+            nbCraftBeforeNextCraft = 50,
+            maxCraftPerDay = 1000
+        },
+    },
+    ["Bijoutier"] = {
+        {
+            craftName = "La destinée dorée",
+            craftId = 158,
+            nbCraftBeforeNextCraft = 50,
+            maxCraftPerDay = 1000
+        },
+        {
+            craftName = "Blessure du Sacrieur",
+            craftId = 1493,
+            nbCraftBeforeNextCraft = 50,
+            maxCraftPerDay = 1000
+        },
+    },
+    ["Cordonnier"] = {
+        {
+            craftName = "Les Incrustes",
+            craftId = 8535,
+            nbCraftBeforeNextCraft = 50,
+            maxCraftPerDay = 1000
+        },
+    },
+    ["Bricoleur"] = {
+        {
+            craftName = "Clef des Champs",
+            craftId = 8143,
+            nbCraftBeforeNextCraft = 50,
+            maxCraftPerDay = 1000
+        }
+    },
+    ["Forgeron"] = {
+        {
+            craftName = "Couteau de Chasse",
+            craftId = 1934,
+            nbCraftBeforeNextCraft = 50,
+            maxCraftPerDay = 1000
+        },
+    },
+    ["Sculpteur"] = {
+        {
+            craftName = "Demi-Baguette",
+            craftId = 1356,
+            nbCraftBeforeNextCraft = 50,
+            maxCraftPerDay = 1000
+        },
+    },
+    ["Façonneur"] = {
+        {
+            craftName = "Bouclier du Bûcheron",
+            craftId = 18676,
             nbCraftBeforeNextCraft = 50,
             maxCraftPerDay = 1000
         },
