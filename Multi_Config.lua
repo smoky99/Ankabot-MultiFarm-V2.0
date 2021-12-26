@@ -6,7 +6,7 @@ Config.minPercentLifeBeforeFight = 80
 
 Config.houseMode = false -- Mettre true pour activer le retour maison
 
-Config.wortimeJob = {
+Config.wortimeJob = { -- Format hh:mm
     ["Lundi"] = {
         { startTime = "05:14", finishTime = "23:59", job = "Bûcheron" },
     },

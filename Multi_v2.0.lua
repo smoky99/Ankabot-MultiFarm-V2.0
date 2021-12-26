@@ -640,7 +640,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
 
         developer:suspendScriptUntil("ZaapDestinationsMessage", 100, false)
 
-        local closestZaap = map:closestZaap(mapIdDest, Config.zaapExcepted) --self:ClosestZaap(mapIdDest)
+        local closestZaap = map:closestZaapV2(mapIdDest, Config.zaapExcepted) --self:ClosestZaap(mapIdDest)
 
         if closestZaap == 0 then
             map:changeMap('havenbag')

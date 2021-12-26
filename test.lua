@@ -39,7 +39,7 @@ BannedMapId = {}
 
 function move()
 
-    Utils:Dump(Zone:RetrieveSubAreaContainingRessource(84))
+    Utils:Print(inventory:getTypeName(286))
     -- if not Mapper.initialized then
     --     developer:registerMessage("ChangeMapMessage", CB_ChangeMapMessage)
     --     developer:registerMessage("MapComplementaryInformationsDataInHavenBagMessage", newMapAction)

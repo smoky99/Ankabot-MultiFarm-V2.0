@@ -304,4 +304,8 @@ Info.workshopInfo = {
     }
 }
 
+Info.shopInfo = {
+    
+}
+
 return Info
