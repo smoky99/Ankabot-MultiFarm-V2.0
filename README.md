@@ -12,6 +12,7 @@
 2. Xp automatique
 3. Gestion compte non abonné
 4. Gestion des donjon
+5. Ajout du mode controller pour pouvoir farmer avec plusieurs bot en groupe
 
 ## Important
 
