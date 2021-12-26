@@ -435,6 +435,9 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             end
 
             if not self.tpZoneFarm then
+                if self:IsIncarnamMapId(map:currentMapId()) and not self:IsIncarnamMapId(self.RZNextMapId) then
+                    return self:GoAstrub()
+                end
                 if not self:IsIncarnamMapId(self.RZNextMapId) then
                     if map:currentMap() == "0,0" then
                         self.tpZoneFarm = true
@@ -445,9 +448,11 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                         self:HavenBag()
                     end
                 else
-                    self.tpZoneFarm = true
                     if map:currentMap() == "0,0" then
-                        map:changeMap('havenbag')
+                        self.tpZoneFarm = true
+                        self:UseZaap(191105026)
+                    else
+                        self:HavenBag()
                     end
                 end
             end
@@ -467,10 +472,8 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                     PathFinder:MovePath(self.pathMine)
                     global:delay(1000)
                 else
-                    for _ = 1, 5 do
-                        map:moveToward(self.RZNextMapId)
-                        map:moveRandomToward(self.RZNextMapId)
-                    end
+                    map:moveToward(self.RZNextMapId)
+                    map:moveRandomToward(self.RZNextMapId)
                 end
 
                 if self.lastFailMapId == map:currentMapId() and self.countFailMoveNext > 25 then
@@ -494,6 +497,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
 
 
             Utils:Print("Apres moveNext", "dev")
+            global:leaveDialog()
             self:RoadZone(tblMapId)
         else
             Utils:Print("Table nil", "RoadZone", "error")

@@ -26,7 +26,7 @@ Config.wortimeJob = {
         { startTime = "06:00", finishTime = "23:59", job = "Façonneur" }
     },
     ["Dimanche"] = {
-        { startTime = "00:02", finishTime = "23:50", job = "Façonneur" },
+        { startTime = "00:02", finishTime = "23:50", job = "Alchimiste" },
     }
 }
 
@@ -66,6 +66,12 @@ Config.craft = {
         },
     },
     ["Alchimiste"] = {
+        {
+            craftName = "Levure de boulanger",
+            craftId = 286,
+            nbCraftBeforeNextCraft = 500,
+            maxCraftPerDay = 1000
+        },
         {
             craftName = "Potion de Mini Soin",
             craftId = 1182,
