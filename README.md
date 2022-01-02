@@ -8,11 +8,10 @@
 
 ## Les méthodes a venir
 
-1. Vente automatique
-2. Xp automatique
-3. Gestion compte non abonné
-4. Gestion des donjon
-5. Ajout du mode controller pour pouvoir farmer avec plusieurs bot en groupe
+1. Xp automatique
+2. Gestion compte non abonné
+3. Gestion des donjon
+4. Ajout du mode controller pour pouvoir farmer avec plusieurs bot en groupe
 
 ## Important
 
