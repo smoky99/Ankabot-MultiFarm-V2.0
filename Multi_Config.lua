@@ -4,7 +4,11 @@ Config.minPercentPodsBeforeBank, Config.maxPercentPodsBeforeBank = 70, 90
 
 Config.minPercentLifeBeforeFight = 80
 
-Config.houseMode = false -- Mettre true pour activer le retour maison
+Config.houseMode = false -- Active ou désactive le retour maison (true/false)
+
+Config.tradeMode = true -- Active ou désactive la vente/achat automatique (true/false)
+Config.tradeArea = "Bonta" -- Choix de l'endroit pour l'utilisation des HDV (Bonta, Brakmar)
+Config.tradeInterval = 4 -- Choix pour la vérification des items a vendre tout les x retour banque/maison
 
 Config.wortimeJob = { -- Format hh:mm
     ["Lundi"] = {
@@ -174,6 +178,61 @@ Config.craft = {
             nbCraftBeforeNextCraft = 50,
             maxCraftPerDay = 1000
         },
+    }
+}
+
+Config.salesInfo = {
+    ["Sale"] = {
+        ["Ressources"] = {
+            {
+                objectName = "Blé",
+                objectId = 289,
+                lot = 100,
+                maxLotInHdv = 10,
+                minPrice = 500,
+                maxPrice = 10000
+            },
+            {
+                objectName = "Ebonite",
+                objectId = 746,
+                lot = 100,
+                maxLotInHdv = 10,
+                minPrice = 50000,
+                maxPrice = 200000
+            }
+        },
+        ["Consommables"] = {
+            {
+                objectName = "Potion Raide Mhor",
+                objectId = 16402,
+                lot = 100,
+                maxLotInHdv = 10,
+                minPrice = 500,
+                maxPrice = 10000
+            }
+        },
+        ["Runes"] = {
+
+        },
+        ["Equipements"] = {
+
+        }
+    },
+    ["Buy"] = {
+        ["Ressources"] = {
+            {
+
+            }
+        },
+        ["Consommables"] = {
+    
+        },
+        ["Runes"] = {
+    
+        },
+        ["Equipements"] = {
+    
+        }
     }
 }
 

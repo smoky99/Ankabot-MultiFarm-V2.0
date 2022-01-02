@@ -305,7 +305,24 @@ Info.workshopInfo = {
 }
 
 Info.shopInfo = {
-    
+    ["Bonta"] = {
+        ["Ressources"] = {
+            shopMapId = 212601350,
+            elementId = 522694
+        },
+        ["Consommables"] = {
+            shopMapId = 212600839,
+            elementId = 522692
+        },
+        ["Equipements"] = {
+            shopMapId = 212600837,
+            elementId = 522691
+        },
+        ["Runes"] = {
+            shopMapId = 212601859,
+            elementId = 522693
+        }
+    }
 }
 
 return Info

@@ -4,7 +4,7 @@ GATHER = {}
 MIN_MONSTERS, MAX_MONSTERS = 1, 8
 FORBIDDEN_MONSTERS, FORCE_MONSTERS = {}, {}
 
-local bankMapId = 192415750
+local bankMapId = 99095051
 
 Config = dofile(global:getCurrentScriptDirectory() .. "\\Multi_Config.lua")
 Info = dofile(global:getCurrentScriptDirectory() .. "\\Multi_Info.lua")
@@ -25,6 +25,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     Packet = {}
     Action = {}
     PathFinder = {}
+    Shop = {}
 
     -- Move
     Movement.zaapDestinations = {}
@@ -61,7 +62,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     Movement.iZaapOpen = false
 
     function Movement:Move()
-        Packet:SubManager({["ZaapDestinationsMessage"] = CB_ZaapDestinations, ["LeaveDialogMessage"] = CB_LeaveDialogMessage}, true)
+        Packet:SubManager({["LeaveDialogMessage"] = CB_LeaveDialogMessage, ["TextInformationMessage"] = CB_TextInformationMessage}, true)
         self.inBank = false
 
         if inventory:podsP() >= self.podsMaxBeforeBank then
@@ -72,9 +73,11 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
 
         Worker:WorkManager()
 
+        Shop:ShopManager()
+
         Craft:CraftManager()
 
-        if not Craft.canCraft and Craft.selectedItemToFarm then
+        if not Craft.canCraft and Craft.selectedItemToFarm and not ( Shop.needToGoHDV or Shop.needPriceUpdate ) then
 
             if not self.configRoad then
                 self:ConfigRoad()
@@ -638,7 +641,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             --map:door(zaapCellId)
         end
 
-        developer:suspendScriptUntil("ZaapDestinationsMessage", 100, false)
+        --developer:suspendScriptUntil("ZaapDestinationsMessage", 100, false)
 
         local closestZaap = map:closestZaapV2(mapIdDest, Config.zaapExcepted) --self:ClosestZaap(mapIdDest)
 
@@ -727,6 +730,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             Movement.iZaapOpen = false
         end
     end
+
     -- Action
 
     Action.statedElements = {}
@@ -853,7 +857,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             self.propertiesInit = true
         end
 
-        if not self.checkPossibleCraft then
+        if not self.checkPossibleCraft and not ( Shop.needToGoHDV or Shop.needPriceUpdate ) then
             if not Movement.inBank then
                 Movement:GoBank()
             end
@@ -862,7 +866,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             end
         end
 
-        if not self.canCraft and self.checkPossibleCraft then
+        if not self.canCraft and self.checkPossibleCraft and not ( Shop.needToGoHDV or Shop.needPriceUpdate ) then
             local allItemDroped = true
 
             for _, vDrop in pairs(self.itemsToDrop) do
@@ -1068,11 +1072,17 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             Movement.podsMaxBeforeBank = 101
         else
             self.canCraft = false
-            Movement.podsMaxBeforeBank = global:random(Config.minPercentPodsBeforeBank, Config.maxPercentPodsBeforeBank)
-            Utils:Print("Prochain retour a la banque a " .. Movement.podsMaxBeforeBank .. "% pods", "Info")
+            Shop:ShopManager()
+            if not Shop.needToGoHDV then
+                Movement.podsMaxBeforeBank = global:random(Config.minPercentPodsBeforeBank, Config.maxPercentPodsBeforeBank)
+                Utils:Print("Prochain retour a la banque a " .. Movement.podsMaxBeforeBank .. "% pods", "Info")
+            else
+                Movement.podsMaxBeforeBank = 101
+            end
         end
 
         --Utils:Dump(self.itemsToDrop)
+
         self.checkPossibleCraft = true
         global:leaveDialog()
         map:changeMap('havenbag')
@@ -1106,7 +1116,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     function Craft:CalculMaxIngredientsInInventory(totalWeightIngCraft, nbIng)
         --Utils:Print("totalWeight = " .. totalWeightIngCraft .. " nbIng = " .. nbIng)
         --Utils:Print("Round " .. (math.round((inventory:podsMax() - inventory:pods()) - 100, 100)))
-        return ((math.round((inventory:podsMax() - inventory:pods()) - 100, 100)) / totalWeightIngCraft) * nbIng
+        return ((Math:Round((inventory:podsMax() - inventory:pods()) - 100, 100)) / totalWeightIngCraft) * nbIng
     end
 
     function Craft:CalculMaxPossibleItemToCraft()
@@ -1189,6 +1199,350 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
         return nil
     end
 
+    -- Shop
+
+    Shop.needToGoHDV = false
+    Shop.needPriceUpdate = false
+    Shop.printInfo = false
+    Shop.currentInterval = Config.tradeInterval
+    Shop.receivedTextInformationMessage = developer:suspendScriptUntil("TextInformationMessage", 0, false, "", 1000)
+
+    Shop.infoHdv = {
+        ["Ressources"] = { availableSpace = -1, itemsInHdv = {}, priceUpdated = false },
+        ["Consommables"] = { availableSpace = -1, itemsInHdv = {}, priceUpdated = false },
+        ["Runes"] = { availableSpace = -1, itemsInHdv = {}, priceUpdated = false },
+        ["Equipements"] = { availableSpace = -1, itemsInHdv = {}, priceUpdated = false }
+    }
+
+    Shop.itemsToSale = {}
+    Shop.itemsToBuy = {}
+
+    Shop.currentMode = ""
+    Shop.selectedTypeHDV = ""
+    Shop.currentShopInfo = {}
+
+    function Shop:ShopManager()
+
+        if self.currentInterval >= Config.tradeInterval and not self.needPriceUpdate then
+            Craft.checkPossibleCraft = false
+        end
+
+        if Movement.inBank then
+            self.currentInterval = self.currentInterval + 1
+        end
+
+        if Movement.inBank and self.currentInterval >= Config.tradeInterval then
+            Utils:Print("Vérification des items a vendre/acheter", "Trading")
+            self.currentInterval = 0
+            self.needPriceUpdate = true
+            self:CheckItemsForTrade()
+            return
+        end
+
+        if self.needToGoHDV then
+
+            if Utils:LenghtOfTable(self.itemsToSale) > 0 then
+                self.currentMode = "sale"
+            elseif Utils:LenghtOfTable(self.itemsToBuy) > 0 then
+                self.currentMode = "buy"
+            else
+                Utils:Print("Tous les items on était mit en vente", "Trade")
+                self.needToGoHDV = false
+            end
+
+            if self.needToGoHDV then
+                if self.currentShopInfo.shopMapId == nil then
+                    self:SelectHDV(self.currentMode)
+                end
+
+                if self.currentShopInfo.shopMapId ~= nil then
+                    if map:currentMapId() ~= self.currentShopInfo.shopMapId then
+                        if map:currentMap() == "0,0" then
+                            Movement:UseZaap(self.currentShopInfo.shopMapId)
+                        end
+                        Movement:LoadRoad(self.currentShopInfo.shopMapId)
+                        Movement:MoveNext()
+                    elseif map:currentMapId() == self.currentShopInfo.shopMapId then
+                        Utils:Print("Arrivé a l'hotel de vente", "dev")
+                        self:UseHdv()
+                        self.currentShopInfo = {}
+                        self:ShopManager()
+                    end
+                end
+            end
+        end
+
+        if self.needPriceUpdate and not self.needToGoHDV then
+            self.currentMode = "update"
+            self:SelectHdvToUpdate()
+
+            if not self.printInfo then
+                Utils:Print("Actualisation du prix des items en hotel de vente, au lancement du script le bot fera le tour des hotel de vente", "Trade")
+                self.printInfo = true
+            end
+
+            if self.needPriceUpdate then
+                if self.currentShopInfo.shopMapId ~= nil then
+                    if map:currentMapId() ~= self.currentShopInfo.shopMapId then
+                        if map:currentMap() == "0,0" then
+                            Movement:UseZaap(self.currentShopInfo.shopMapId)
+                        end
+                        Movement:LoadRoad(self.currentShopInfo.shopMapId)
+                        Movement:MoveNext()
+                    elseif map:currentMapId() == self.currentShopInfo.shopMapId then
+                        Utils:Print("Arrivé a l'hotel de vente", "dev")
+                        self:UseHdv()
+                        self.currentShopInfo = {}
+                        self:ShopManager()
+                    end
+                end
+            else
+                Utils:Print("Les prix de tout les hotel de vente on était actualisé", "Trade")
+                self.printInfo = false
+                for _, vInfo in pairs(self.infoHdv) do
+                    if Utils:LenghtOfTable(vInfo.itemsInHdv) > 0 then
+                        vInfo.priceUpdated = false
+                    end
+                end
+                Shop:ShopManager()
+            end
+        end
+
+    end
+
+    function Shop:UseHdv()
+        Utils:Print("Ouverture de l'hotel de vente en mode " .. self.currentMode, "dev")
+
+        if self.currentMode == "sale" then
+            npc:npc(self.currentShopInfo.elementId, 5)
+            global:delay(10000)
+            self:UpdateInfoItemsOnSale()
+            self:UpdatePrice()
+            self:SellItems()
+        elseif self.currentMode == "update" then
+            npc:npc(self.currentShopInfo.elementId, 5)
+            global:delay(10000)
+            self:UpdateInfoItemsOnSale()
+            self:UpdatePrice()
+            global:leaveDialog()
+        elseif self.currentMode == "buy" then
+            npc:npc(self.currentShopInfo.elementId, 6)
+        end
+
+    end
+
+    function Shop:SellItems()
+        Utils:Print("Mise en vente des items", "dev")
+        local lotConvert = { ["100"] = 3, ["10"] = 2, ["1"] = 1 }
+        for _, vItem in pairs(self.itemsToSale[self.selectedTypeHDV]) do
+            local maxLotToSell = self:GetMaxLotToSell(vItem.objectId)
+            if maxLotToSell > 0 then
+                local hdvPrice = sale:getPriceItem(vItem.objectId, lotConvert[tostring(vItem.lot)])
+
+                if hdvPrice < vItem.minPrice then
+                    Utils:Print("L'objet [" .. vItem.objectName .. "] ne peut pas être vendu pour le moment, le prix est actuellement inférieur a minPrice", "Trade")
+                elseif hdvPrice > vItem.maxPrice then
+                    Utils:Print("L'objet [" .. vItem.objectName .. "] ne peut pas être vendu pour le moment, le prix est actuellement supérieur a maxPrice", "Trade")
+                else
+                    if self.infoHdv[self.selectedTypeHDV].availableSpace == 0 then
+                        Utils:Print("Plus de place dans l'hotel de vente " .. self.selectedTypeHDV, "Trade")
+                        break
+                    elseif self.infoHdv[self.selectedTypeHDV].availableSpace < maxLotToSell then
+                        maxLotToSell = self.infoHdv[self.selectedTypeHDV].availableSpace
+                    end
+
+                    if maxLotToSell < vItem.nbLotToSell then
+                        vItem.nbLotToSell = maxLotToSell
+                    end
+
+                    for _ = 1, vItem.nbLotToSell do
+                        Utils:Print("Mise en vente de x" .. vItem.lot .. " [" .. vItem.objectName .. "] au prix de " .. hdvPrice .."k", "Trade")
+                        self.infoHdv[self.selectedTypeHDV].availableSpace = self.infoHdv[self.selectedTypeHDV].availableSpace - 1
+                        table.insert(self.infoHdv[self.selectedTypeHDV].itemsInHdv, { itemGID = vItem.objectId, lot = vItem.lot, price = hdvPrice })
+                        sale:sellItem(vItem.objectId, vItem.lot, hdvPrice)
+                    end
+                end
+
+            elseif maxLotToSell == 0 then
+                Utils:Print("Le nombre de lot max et atteint pour l'item [" .. inventory:itemNameId(vItem.objectId) .. "]", "Trade")
+            end
+        end
+        self.itemsToSale[self.selectedTypeHDV] = nil
+        global:leaveDialog()
+    end
+
+    function Shop:UpdatePrice()
+        Utils:Print("Actualisation des prix de l'hotel de vente " .. self.selectedTypeHDV, "Trade")
+        local lotConvert = { ["100"] = 3, ["10"] = 2, ["1"] = 1 }
+        for i = 1, sale:itemsOnSale() do
+            local itemGID = sale:getItemGID(i)
+            local lot = sale:getItemQuantity(i)
+            local newPrice = sale:getPriceItem(itemGID, lotConvert[tostring(lot)])
+            if sale:getItemPrice(i) ~= newPrice then
+                for _, vItem in pairs(Config.salesInfo["Sale"][self.selectedTypeHDV]) do
+                    if vItem.objectId == itemGID then
+                        if newPrice < vItem.minPrice then
+                            Utils:Print("Le prix de l'item [" .. vItem.objectName .. "] ne peut pas être actualisé, le prix et inférieur a minPrice", "Trade")
+                        elseif newPrice > vItem.maxPrice then
+                            Utils:Print("Le prix de l'item [" .. vItem.objectName .. "] ne peut pas être actualisé, le prix et supérieur a maxPrice", "Trade")
+                        else
+                            Utils:Print("Actualisation du prix de l'item [" .. vItem.objectName .. "] nouveau prix = " .. newPrice .."k", "Trade")
+                            sale:editPrice(sale:getItemGUID(i), newPrice, lot)
+                        end
+                    end
+                end
+            end
+        end
+
+        self.infoHdv[self.selectedTypeHDV].priceUpdated = true
+    end
+
+    function Shop:GetMaxLotToSell(objectId)
+        local maxLot = 0
+        for _, vType in pairs(Config.salesInfo["Sale"]) do
+            local goBreak = false
+            for _, vItem in pairs(vType) do
+                if vItem.objectId == objectId then
+                    maxLot = vItem.maxLotInHdv
+                    goBreak = true
+                    break
+                end
+            end
+            if goBreak then
+                break
+            end
+        end
+
+        local nbLot = 0
+
+        for _, vType in pairs(self.infoHdv) do
+            for _, vInfo in pairs(vType.itemsInHdv) do
+                if vInfo.itemGID == objectId then
+                    nbLot = nbLot + 1
+                end
+            end
+            if nbLot > 0 then
+                break
+            end
+        end
+
+        return maxLot - nbLot
+    end
+
+    function Shop:UpdateInfoItemsOnSale()
+        self.infoHdv[self.selectedTypeHDV].availableSpace = sale:availableSpace()
+        self.infoHdv[self.selectedTypeHDV].itemsInHdv = {}
+
+        for i = 1, sale:itemsOnSale() do
+            table.insert(self.infoHdv[self.selectedTypeHDV].itemsInHdv, { itemGID = sale:getItemGID(i), lot = sale:getItemQuantity(i), price = sale:getItemPrice(i) })
+        end
+
+    end
+
+    function Shop:SelectHDV(mode)
+        if Utils:Equal(mode, "sale") then
+            for kType, _ in pairs(self.itemsToSale) do
+                Utils:Print("Selection de l'hotel de vente " ..kType, "dev")
+                self.selectedTypeHDV = tostring(kType)
+                self.currentShopInfo = self:GetShopInfo("bonta", kType)
+                break
+            end
+        else
+
+        end
+    end
+
+    function Shop:SelectHdvToUpdate()
+        local allUpdated = true
+        for kType, vInfo in pairs(self.infoHdv) do
+            if not vInfo.priceUpdated then
+                allUpdated = false
+                self.selectedTypeHDV = tostring(kType)
+                self.currentShopInfo = self:GetShopInfo("bonta", kType)
+                break
+            end
+        end
+        if allUpdated then
+            self.needPriceUpdate = false
+        end
+    end
+
+    function Shop:GetShopInfo(area, hdvType)
+        for kArea, vTbl in pairs(Info.shopInfo) do
+            if Utils:Equal(kArea, area) then
+                for kType, vInfo in pairs(vTbl) do
+                    if Utils:Equal(kType, hdvType) then
+                        return vInfo
+                    end
+                end
+            end
+        end
+        Utils:Print("Impossible de trouver les info du shop " .. hdvType .. " dans la zone de " .. area, "dev")
+        return nil
+    end
+
+    function Shop:CheckItemsForTrade()
+        for kType, vType in pairs(Config.salesInfo["Sale"]) do
+            Utils:Print("Vérification des items de type " .. kType .. " a vendre", "Trade")
+
+            for _, vObj in pairs(vType) do
+                local objectQuantity = Math:Round(exchange:storageItemQuantity(vObj.objectId), 100, "<")
+                local maxLotToSell = self:GetMaxLotToSell(vObj.objectId)
+                if objectQuantity >= vObj.lot and maxLotToSell > 0 then
+                    if objectQuantity > vObj.lot * maxLotToSell then
+                        objectQuantity = vObj.lot * maxLotToSell
+                    end
+
+                    for i = maxLotToSell, 0, -1 do
+                        objectQuantity = vObj.lot * i
+                        local requiredPods = objectQuantity * inventory:itemWeight(vObj.objectId)
+
+                        if requiredPods < inventory:podsMax() - inventory:pods() then
+                            break
+                        end
+                    end
+
+                    if objectQuantity ~= 0 then
+                        local tmpObj = vObj
+                        tmpObj.nbLotToSell = objectQuantity / vObj.lot
+
+                        Utils:Print("L'objet " .. vObj.objectName .. " peut être vendu pour " .. tmpObj.nbLotToSell .." lot de x" .. vObj.lot, kType)
+
+                        if self.itemsToSale[kType] == nil then
+                            self.itemsToSale[kType] = {}
+                        end
+
+                        table.insert(self.itemsToSale[kType], tmpObj)
+                        exchange:getItem(vObj.objectId, objectQuantity)
+                        self.needToGoHDV = true
+                    else
+                        self.currentInterval = Config.tradeInterval
+                    end
+                end
+            end
+        end
+    end
+
+    function CB_TextInformationMessage(packet)
+        if tonumber(packet.msgId) == 65 then -- Vente d'un item
+            for _, vInfo in pairs(Shop.infoHdv) do
+                local goBreak = false
+                for i = Utils:LenghtOfTable(vInfo.itemsInHdv), 1, -1 do
+                    if Utils:Equal(vInfo.itemsInHdv[i].itemGID, packet.parameters[2]) then
+                        Utils:Print("Hdv updated", "dev")
+                        table.remove(vInfo.itemsInHdv, i)
+                        vInfo.availableSpace = vInfo.availableSpace + 1
+                        goBreak = true
+                        break
+                    end
+                end
+                if goBreak then
+                    break
+                end
+            end
+        end
+    end
+
     -- PathFinder (mine)
 
     PathFinder.changeMapInfo = dofile(global:getCurrentScriptDirectory() .. "\\MapGraph.lua")
@@ -1223,7 +1577,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                 table.insert(pathToRet, self:GetChangeMapInfo(path:get(i):from(), path:get(i):to()))
                 --Utils:Print('# from ' .. path:get(i):from() .. ' to ' .. path:get(i):to() .. ' ( distance: ' .. path:get(i).weight .. ' )')
             end
-    
+
             return pathToRet
         else
             Utils:Print("Dijkstra ne trouve aucun path pour la mapId ("..toMapId..")", "dev", "error")
@@ -1432,6 +1786,16 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
         return (a - b) / b * 100
     end
 
+    function Math:Round(v, bracket, upperOrLower)
+        bracket = bracket or 1
+        upperOrLower = upperOrLower or "<"
+        if upperOrLower == "<" then
+            return math.floor(v/bracket) * bracket
+        else
+            return math.ceil(v/bracket) * bracket
+        end
+    end
+
 -- Ankabot Main Func
 
 function move()
@@ -1446,13 +1810,4 @@ end
 
 function phenix()
     Utils:Print("Votre personnage et en fantôme !", "Info")
-end
-
-function math.sign(v) -- Dependance de math.round
-    return (v >= 0 and 1) or -1
-end
-
-function math.round(v, bracket) -- Sert a arrondir un nombre
-    bracket = bracket or 1
-    return math.floor(v/bracket) * bracket
 end
