@@ -184,14 +184,14 @@ Config.craft = {
 Config.salesInfo = {
     ["Sale"] = {
         ["Ressources"] = {
-            {
-                objectName = "Blé",
-                objectId = 289,
-                lot = 100,
-                maxLotInHdv = 10,
-                minPrice = 500,
-                maxPrice = 10000
-            },
+            -- {
+            --     objectName = "Blé",
+            --     objectId = 289,
+            --     lot = 100,
+            --     maxLotInHdv = 10,
+            --     minPrice = 500,
+            --     maxPrice = 10000
+            -- },
             {
                 objectName = "Ebonite",
                 objectId = 746,
@@ -221,7 +221,16 @@ Config.salesInfo = {
     ["Buy"] = {
         ["Ressources"] = {
             {
-
+                objectName = "Bave de bouftout",
+                objectId = 385,
+                minStockInBank = 500,
+                maxPrice = 10000
+            },
+            {
+                objectName = "Blé",
+                objectId = 289,
+                minStockInBank = 10000,
+                maxPrice = 10000
             }
         },
         ["Consommables"] = {

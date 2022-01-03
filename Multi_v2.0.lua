@@ -26,6 +26,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     Action = {}
     PathFinder = {}
     Shop = {}
+    Character = {}
 
     -- Move
     Movement.zaapDestinations = {}
@@ -1217,6 +1218,8 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     Shop.itemsToSale = {}
     Shop.itemsToBuy = {}
 
+    Shop.remainingPods = 0
+
     Shop.currentMode = ""
     Shop.selectedTypeHDV = ""
     Shop.currentShopInfo = {}
@@ -1246,7 +1249,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             elseif Utils:LenghtOfTable(self.itemsToBuy) > 0 then
                 self.currentMode = "buy"
             else
-                Utils:Print("Tous les items on était mit en vente", "Trade")
+                Utils:Print("Tous les items on était mit en vente/acheter", "Trade")
                 self.needToGoHDV = false
             end
 
@@ -1263,7 +1266,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                         Movement:LoadRoad(self.currentShopInfo.shopMapId)
                         Movement:MoveNext()
                     elseif map:currentMapId() == self.currentShopInfo.shopMapId then
-                        Utils:Print("Arrivé a l'hotel de vente", "dev")
+                        --Utils:Print("Arrivé a l'hotel de vente", "dev")
                         self:UseHdv()
                         self.currentShopInfo = {}
                         self:ShopManager()
@@ -1311,7 +1314,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     end
 
     function Shop:UseHdv()
-        Utils:Print("Ouverture de l'hotel de vente en mode " .. self.currentMode, "dev")
+        --Utils:Print("Ouverture de l'hotel de vente en mode " .. self.currentMode, "dev")
 
         if self.currentMode == "sale" then
             npc:npc(self.currentShopInfo.elementId, 5)
@@ -1327,12 +1330,14 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             global:leaveDialog()
         elseif self.currentMode == "buy" then
             npc:npc(self.currentShopInfo.elementId, 6)
+            global:delay(10000)
+            self:BuyItems()
         end
 
     end
 
     function Shop:SellItems()
-        Utils:Print("Mise en vente des items", "dev")
+        Utils:Print("Mise en vente des items", "Trade")
         local lotConvert = { ["100"] = 3, ["10"] = 2, ["1"] = 1 }
         for _, vItem in pairs(self.itemsToSale[self.selectedTypeHDV]) do
             local maxLotToSell = self:GetMaxLotToSell(vItem.objectId)
@@ -1368,6 +1373,31 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             end
         end
         self.itemsToSale[self.selectedTypeHDV] = nil
+        global:leaveDialog()
+    end
+
+    function Shop:BuyItems()
+        Utils:Print("Achat des items", "Trade")
+
+        for _, vItem in pairs(self.itemsToBuy[self.selectedTypeHDV]) do
+            local requiredPods = vItem.quantityToBuy * inventory:itemWeight(vItem.objectId)
+
+            if requiredPods > Character:RemainingPods() then
+                for _ = vItem.quantityToBuy / vItem.lot, 0, -1 do
+                    vItem.quantityToBuy = vItem.quantityToBuy - vItem.lot
+                    requiredPods = vItem.quantityToBuy * inventory:itemWeight(vItem.objectId)
+                    if requiredPods < Character:RemainingPods() then
+                        break
+                    end
+                end
+            end
+
+            for _ = 1, vItem.quantityToBuy / vItem.lot do
+                sale:buyItem(vItem.objectId, vItem.lot, vItem.maxPrice)
+            end
+        end
+
+        self.itemsToBuy[self.selectedTypeHDV] = nil
         global:leaveDialog()
     end
 
@@ -1442,13 +1472,18 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     function Shop:SelectHDV(mode)
         if Utils:Equal(mode, "sale") then
             for kType, _ in pairs(self.itemsToSale) do
-                Utils:Print("Selection de l'hotel de vente " ..kType, "dev")
+                --Utils:Print("Selection de l'hotel de vente " ..kType, "dev")
                 self.selectedTypeHDV = tostring(kType)
                 self.currentShopInfo = self:GetShopInfo("bonta", kType)
                 break
             end
         else
-
+            for kType, _ in pairs(self.itemsToBuy) do
+                --Utils:Print("Selection de l'hotel de vente " ..kType, "dev")
+                self.selectedTypeHDV = tostring(kType)
+                self.currentShopInfo = self:GetShopInfo("bonta", kType)
+                break
+            end
         end
     end
 
@@ -1482,6 +1517,8 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     end
 
     function Shop:CheckItemsForTrade()
+        self.remainingPods = Character:RemainingPods()
+
         for kType, vType in pairs(Config.salesInfo["Sale"]) do
             Utils:Print("Vérification des items de type " .. kType .. " a vendre", "Trade")
 
@@ -1493,11 +1530,11 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                         objectQuantity = vObj.lot * maxLotToSell
                     end
 
-                    for i = maxLotToSell, 0, -1 do
+                    for i = objectQuantity / vObj.lot, 0, -1 do
                         objectQuantity = vObj.lot * i
                         local requiredPods = objectQuantity * inventory:itemWeight(vObj.objectId)
 
-                        if requiredPods < inventory:podsMax() - inventory:pods() then
+                        if requiredPods < Character:RemainingPods() then
                             break
                         end
                     end
@@ -1506,7 +1543,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                         local tmpObj = vObj
                         tmpObj.nbLotToSell = objectQuantity / vObj.lot
 
-                        Utils:Print("L'objet " .. vObj.objectName .. " peut être vendu pour " .. tmpObj.nbLotToSell .." lot de x" .. vObj.lot, kType)
+                        Utils:Print("L'item [" .. vObj.objectName .. "] peut être vendu pour " .. tmpObj.nbLotToSell .." lot de x" .. vObj.lot, kType)
 
                         if self.itemsToSale[kType] == nil then
                             self.itemsToSale[kType] = {}
@@ -1521,6 +1558,60 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                 end
             end
         end
+
+        for kType, vType in pairs(Config.salesInfo["Buy"]) do
+            Utils:Print("Vérification des items de type " .. kType .. " a acheter", "Trade")
+
+            for _, vObj in pairs(vType) do
+                local base
+
+                if vObj.minStockInBank >= 100 then
+                    base = 100
+                elseif vObj.minStockInBank >= 10 then
+                    base = 10
+                else
+                    base = 1
+                end
+
+                local objectQuantity = Math:Round(exchange:storageItemQuantity(vObj.objectId), base, "<")
+
+                if vObj.minStockInBank > objectQuantity then
+                    local quantityToBuy = Math:Round(vObj.minStockInBank - objectQuantity, base, ">")
+                    Utils:Print("L'item [" .. vObj.objectName .. "] a besoin d'être acheter, quantité manquante = " .. quantityToBuy, kType)
+
+                    local requiredPods = quantityToBuy * inventory:itemWeight(vObj.objectId)
+
+                    --Utils:Print("Remaining = " .. self.remainingPods)
+                    --Utils:Print("Required = " .. requiredPods)
+
+                    if requiredPods > self.remainingPods then
+                        for _ = quantityToBuy / base, 0, -1 do
+                            quantityToBuy = quantityToBuy - base
+                            requiredPods = quantityToBuy * inventory:itemWeight(vObj.objectId)
+                            if requiredPods < self.remainingPods then
+                                break
+                            end
+                        end
+                        self.currentInterval = Config.tradeInterval
+                    end
+
+                    if quantityToBuy > 0 then
+                        self.remainingPods = self.remainingPods - requiredPods
+                        local tmpObj = vObj
+                        tmpObj.lot = base
+                        tmpObj.quantityToBuy = quantityToBuy
+                        if self.itemsToBuy[kType] == nil then
+                            self.itemsToBuy[kType] = {}
+                        end
+                        table.insert(self.itemsToBuy[kType], tmpObj)
+                        self.needToGoHDV = true
+                    end
+                end
+            end
+        end
+
+        --Utils:Print(self.remainingPods)
+        --Utils:Dump(self.itemsToBuy)
     end
 
     function CB_TextInformationMessage(packet)
@@ -1529,7 +1620,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                 local goBreak = false
                 for i = Utils:LenghtOfTable(vInfo.itemsInHdv), 1, -1 do
                     if Utils:Equal(vInfo.itemsInHdv[i].itemGID, packet.parameters[2]) then
-                        Utils:Print("Hdv updated", "dev")
+                        --Utils:Print("Hdv updated", "dev")
                         table.remove(vInfo.itemsInHdv, i)
                         vInfo.availableSpace = vInfo.availableSpace + 1
                         goBreak = true
@@ -1778,6 +1869,12 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             end
         end
         return maxLife
+    end
+
+    -- Character
+
+    function Character:RemainingPods()
+        return inventory:podsMax() - inventory:pods()
     end
 
     -- Math
