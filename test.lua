@@ -25,7 +25,7 @@ RC_FILENAME = "Road_"..os.time(os.date("!*t"))..".lua"
 RC_DIRECTION = ""
 
 Mapper = {}
-Mapper.initialized = false
+Mapper.initialized = true
 Mapper.zoneToMap = {}
 Mapper.mapToSave = map:currentMapId()
 
@@ -39,7 +39,8 @@ BannedMapId = {}
 
 function move()
 
-    Utils:Print(inventory:getTypeName(286))
+    local status = developer:postRequest("http://localhost:8080/newController", "controllerName=test")
+    Utils:Print(status)
     -- if not Mapper.initialized then
     --     developer:registerMessage("ChangeMapMessage", CB_ChangeMapMessage)
     --     developer:registerMessage("MapComplementaryInformationsDataInHavenBagMessage", newMapAction)

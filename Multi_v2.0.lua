@@ -1,10 +1,9 @@
--- Ankabot Params 133432578
 GATHER = {}
 
 MIN_MONSTERS, MAX_MONSTERS = 1, 8
 FORBIDDEN_MONSTERS, FORCE_MONSTERS = {}, {}
 
-local bankMapId = 99095051
+local bankMapId = 192415750
 
 Config = dofile(global:getCurrentScriptDirectory() .. "\\Multi_Config.lua")
 Info = dofile(global:getCurrentScriptDirectory() .. "\\Multi_Info.lua")
@@ -14,26 +13,197 @@ Craft = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Craft.lua")
 Utils = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Utils.lua")
 Graph = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Graph.lua")
 Movement = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\Movement.lua")
+JSON = dofile(global:getCurrentDirectory() .. "\\YAYA\\Module\\JSON.lua")
 Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_HavenBag.lua")
+Utils.colorPrint = Config.colorPrint
 
 -- Classes
-
     Worker = {}
     Time = {}
-    Error = {}
     Math = {}
     Packet = {}
     Action = {}
     PathFinder = {}
     Shop = {}
     Character = {}
+    Controller = {}
+    -- Controller
+
+    Controller.init = false
+    Controller.isControlled = false
+    Controller.controllerServerName = ""
+
+    Controller.partyId = nil
+
+    -- Var leader
+    Controller.leader = {}
+
+    Controller.leader.canMove = false
+    Controller.leader.hasAnUpdate = false
+    Controller.leader.needUpdate = false
+
+    Controller.leader.newInfo = {}
+    Controller.leader.sendInfo = {}
+
+    -- Var mules
+
+    Controller.group = {}
+
+    Controller.group.canMove = false
+    Controller.group.hasAnUpdate = false
+    Controller.group.needUpdate = false
+
+    Controller.group.newInfo = {}
+    Controller.group.sendInfo = {}
+
+
+
+    function Controller:ControllerManager()
+
+        if self.isControlled and not self.init then
+            Utils:Print("Script charger en mode controller !", "Controller")
+            local status = developer:postRequest("http://localhost:8080/addCharacter", "controllerName=" .. self.controllerServerName ..  "&username=" .. character:name())
+            if status == "sucess" then
+                Utils:Print("Le serveur a bien était mis a jour", "server")
+            end
+
+
+            if not self:IsLeader() then
+                Packet:SubManager({["PartyInvitationMessage"] = CB_PartyInvitationMessage}, true)
+            end
+
+            if self:IsLeader() then -- Invitation des mules
+
+                Utils:Print("Invitation des mules au groupe", "Controller")
+                for _, vInGameName in pairs(Config.controller.groupInGameUsername) do
+                    Packet:SendPacket("PartyInvitationRequestMessage", function(msg)
+                        msg.target = developer:createMessage("PlayerSearchCharacterNameInformation")
+                        --msg.target["PlayerSearchCharacterNameInformation"] = {}
+                        msg.target.name = vInGameName
+                        return msg
+                    end)
+                    global:delay(100)
+                end
+                Utils:Print("Les mules on était inviter", "Controller")
+                self.init = true
+                self.leader.sendInfo.canMove = true
+            else -- Acceptation des mules au groupes
+                Utils:Print("Attente de l'invitation de groupe", "Controller")
+                while self.partyId == nil do
+                    developer:suspendScriptUntil("PartyInvitationMessage", 0, false)
+                    if self.partyId ~= nil then
+                        Packet:SendPacket("PartyAcceptInvitationMessage", function(msg)
+                            msg.partyId = self.partyId
+                            return msg
+                        end)
+                    end
+                end
+                Utils:Print("Le groupe a était rejoint !", "Controller")
+                Packet:SubManager({["PartyInvitationMessage"] = CB_PartyInvitationMessage})
+                self.init = true
+            end
+        end
+
+        if self.isControlled then
+            self:UpdateControllerServer()
+            self:BankManager()
+
+            if not self:IsLeader() then
+                while not self.group.canMove do
+                    global:delay(1000)
+                    self:ControllerManager()
+                end
+            else
+
+            end
+
+
+        end
+
+    end
+
+    function Controller:BankManager()
+        if inventory:podsP() >= Movement.podsMaxBeforeBank and Controller.isControlled then -- Vérif pods retour bank
+            if self:IsLeader() then
+
+            else
+                
+            end
+        end
+    end
+
+    function Controller:UpdateControllerServer()
+        local jsonString = developer:getRequest("http://localhost:8080/getController/" .. self.controllerServerName)
+        local serverController = JSON.decode(jsonString)
+
+        -- Envoie des info
+        if self.leader.hasAnUpdate then
+
+            serverController.groupHasAnUpdate = true
+            serverController.groupNewInfo = self.leader.sendInfo
+
+            Utils:Print("Envoie des données au serveur", "server")
+
+            local status = developer:postRequest("http://localhost:8080/updateController", "controllerName=" .. self.controllerServerName ..  "&updateController=" .. JSON.encode(serverController))
+            if status == "sucess" then
+                Utils:Print("Le serveur a bien était mis a jour", "server")
+                self.leader.hasAnUpdate = false
+            end
+
+        elseif self.group.hasAnUpdate then
+
+
+            self.group.hasAnUpdate = false
+        end
+
+        -- Réception des info
+
+        if serverController.leaderHasAnUpdate and self:IsLeader() then
+
+        elseif serverController.groupHasAnUpdate and not self:IsLeader() then
+            if serverController.groupNewInfo.canMove ~= nil then
+                Utils:Print("Update info canMove", "mule")
+                self.group.canMove = serverController.groupNewInfo.canMove
+            end
+
+            if serverController.groupNewInfo.craft ~= nil then
+                Utils:Print("Update info craft", "mule")
+                Craft = serverController.groupNewInfo.craft
+            end
+
+
+            serverController.groupHasAnUpdate = false
+            serverController.groupNewInfo = {}
+            local status = developer:postRequest("http://localhost:8080/updateController", "controllerName=" .. self.controllerServerName ..  "&updateController=" .. JSON.encode(serverController))
+            if status == "sucess" then
+                Utils:Print("Le serveur a bien était mis a jour", "server")
+            end
+
+        end
+
+    end
+
+    function Controller:IsLeader()
+        if character:name() == Config.controller.leaderInGameUsername then
+            return true
+        end
+        return false
+    end
+
+    function CB_PartyInvitationMessage(packet)
+        if packet.fromName == Config.controller.leaderInGameUsername then
+            Controller.partyId = packet.partyId
+        end
+    end
 
     -- Move
     Movement.zaapDestinations = {}
 
+    Movement.init = false
     Movement.inBank = false
     Movement.inHouse = false
     Movement.printBank = false
+    Movement.updateLimitPods = false
 
     Movement.configRoad = false
     Movement.mapIdToRoad = {}
@@ -63,118 +233,137 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     Movement.iZaapOpen = false
 
     function Movement:Move()
+
+        if not self.init then
+            global:loadConfiguration(global:getCurrentScriptDirectory() .. "\\SBConfig.xml")
+            self.init = true
+        end
+
+        Controller:ControllerManager()
+
         Packet:SubManager({["LeaveDialogMessage"] = CB_LeaveDialogMessage, ["TextInformationMessage"] = CB_TextInformationMessage}, true)
         self.inBank = false
 
-        if inventory:podsP() >= self.podsMaxBeforeBank then
+        if not self.updateLimitPods and Craft.checkPossibleCraft and not Craft.canCraft then -- Maj PODS
+            self.podsMaxBeforeBank = global:random(Config.minPercentPodsBeforeBank, Config.maxPercentPodsBeforeBank)
+            Utils:Print("Prochain retour a la banque a " .. Movement.podsMaxBeforeBank .. "% pods", "Bank")
+            self.updateLimitPods = true
+        end
+
+        if inventory:podsP() >= self.podsMaxBeforeBank and not Controller.isControlled then -- Vérif pods retour bank
             Craft.checkPossibleCraft = false
+            self.updateLimitPods = false
         end
 
         Action:OpenBags()
 
-        Worker:WorkManager()
-
-        Shop:ShopManager()
-
-        Craft:CraftManager()
-
-        if not Craft.canCraft and Craft.selectedItemToFarm and not ( Shop.needToGoHDV or Shop.needPriceUpdate ) then
-
-            if not self.configRoad then
-                self:ConfigRoad()
+        if (Controller.isControlled and Controller:IsLeader()) or not Controller.isControlled then -- Gestion Craft/Shop/Métier
+            if Config.tradeMode then
+                Shop:ShopManager()
             end
+            Worker:WorkManager()
+            Craft:CraftManager()
+        end
 
-            if self.configRoad then
+        if (Config.tradeMode and not ( Shop.needToGoHDV or Shop.needPriceUpdate )) or not Config.tradeMode then -- Séléction de l'item a farm/Configuration du trajet/Farming
+            self:SelectItemToFarm()
+            if not Craft.canCraft and Craft.selectedItemToFarm then
 
-                if Movement:InMapChecker(self.mapIdToRoad) then
-                    local min, max = 0, 0
-
-                    if #self.mapIdToRoad < 5 then
-                        min, max = 1, 2
-                    elseif #self.mapIdToRoad < 10 then
-                        min, max = 2, 4
-                    elseif #self.mapIdToRoad < 15 then
-                        min, max = 3, 4
-                    elseif #self.mapIdToRoad < 20 then
-                        min, max = 4, 5
-                    elseif #self.mapIdToRoad < 25 then
-                        min, max = 5, 6
-                    elseif #self.mapIdToRoad < 30 then
-                        min, max = 6, 8
-                    else
-                        min, max = 7, 10
-                    end
-
-                    if Time:Timer(min, max) then
-                        Utils:Print("Changement de ressource a farm", "Farming")
-                        self.configRoad = false
-                        self.tpZoneFarm = false
-                        self.RZNextMapId = -1
-                        self.mapIdToRoad = {}
-                        self.pathMine = {}
-                        Craft.selectedItemToFarm = false
-                        return self:Move()
-                    end
+                if not self.configRoad then
+                    self:ConfigRoad()
                 end
 
-                if self.dropAction =="fight" then
+                if self.configRoad then
+
                     if Movement:InMapChecker(self.mapIdToRoad) then
-                        FORCE_MONSTERS = {}
-                        FORBIDDEN_MONSTERS = {}
+                        local min, max = 0, 0
 
-                        local monsterGroupInfo = map:monsterGroups()
+                        if #self.mapIdToRoad < 5 then
+                            min, max = 1, 2
+                        elseif #self.mapIdToRoad < 10 then
+                            min, max = 2, 4
+                        elseif #self.mapIdToRoad < 15 then
+                            min, max = 3, 4
+                        elseif #self.mapIdToRoad < 20 then
+                            min, max = 4, 5
+                        elseif #self.mapIdToRoad < 25 then
+                            min, max = 5, 6
+                        elseif #self.mapIdToRoad < 30 then
+                            min, max = 6, 8
+                        else
+                            min, max = 7, 10
+                        end
 
-                        for _, vGroup in pairs(monsterGroupInfo) do
-                            local canFight = false
-                            if #vGroup.monsters >= MIN_MONSTERS and #vGroup.monsters <= MAX_MONSTERS then
-                                for _, vMonster in pairs(vGroup.monsters) do
-                                    for _, v in pairs(self.monsterDropItem) do
-                                        if v == vMonster.id then
-                                            canFight = true
+                        if Time:Timer(min, max) then
+                            Utils:Print("Changement de ressource a farm", "Farming")
+                            self.configRoad = false
+                            self.tpZoneFarm = false
+                            self.RZNextMapId = -1
+                            self.mapIdToRoad = {}
+                            self.pathMine = {}
+                            Craft.selectedItemToFarm = false
+                            return self:Move()
+                        end
+                    end
+
+                    if self.dropAction =="fight" then
+                        if Movement:InMapChecker(self.mapIdToRoad) then
+                            FORCE_MONSTERS = {}
+                            FORBIDDEN_MONSTERS = {}
+
+                            local monsterGroupInfo = map:monsterGroups()
+
+                            for _, vGroup in pairs(monsterGroupInfo) do
+                                local canFight = false
+                                if #vGroup.monsters >= MIN_MONSTERS and #vGroup.monsters <= MAX_MONSTERS then
+                                    for _, vMonster in pairs(vGroup.monsters) do
+                                        for _, v in pairs(self.monsterDropItem) do
+                                            if v == vMonster.id then
+                                                canFight = true
+                                                break
+                                            end
+                                        end
+                                        if canFight then
                                             break
                                         end
                                     end
-                                    if canFight then
-                                        break
+                                end
+
+                                if canFight then
+                                    table.insert(FORCE_MONSTERS, vGroup.contextualId)
+                                else
+                                    table.insert(FORBIDDEN_MONSTERS, vGroup.contextualId)
+                                end
+                            end
+
+                            --Utils:Print("Min monsters = " .. MIN_MONSTERS)
+                            --Utils:Print("Max monsters = " .. MAX_MONSTERS)
+                            --Utils:Dump(FORCE_MONSTERS)
+
+                            if #FORCE_MONSTERS > 0 then
+                                local printLife = false
+                                while Config.minPercentLifeBeforeFight > character:lifePointsP() do
+                                    if not printLife then
+                                        Utils:Print("Régénération des PV avant combat !", "Farming")
+                                        printLife = true
                                     end
+                                    global:delay(10)
                                 end
-                            end
-
-                            if canFight then
-                                table.insert(FORCE_MONSTERS, vGroup.contextualId)
-                            else
-                                table.insert(FORBIDDEN_MONSTERS, vGroup.contextualId)
+                                map:fight()
                             end
                         end
-
-                        --Utils:Print("Min monsters = " .. MIN_MONSTERS)
-                        --Utils:Print("Max monsters = " .. MAX_MONSTERS)
-                        --Utils:Dump(FORCE_MONSTERS)
-
-                        if #FORCE_MONSTERS > 0 then
-                            local printLife = false
-                            while Config.minPercentLifeBeforeFight > character:lifePointsP() do
-                                if not printLife then
-                                    Utils:Print("Régénération des PV avant combat !", "Combat")
-                                    printLife = true
-                                end
-                                global:delay(10)
-                            end
-                            map:fight()
-                        end
+                    else
+                        --Utils:Dump(GATHER)
+                        Action:Gather()
+                        map:gather()
                     end
-                else
-                    --Utils:Dump(GATHER)
-                    Action:Gather()
-                    map:gather()
+
+                    Movement:RoadZone(self.mapIdToRoad)
+
+                    --Utils:Print("Apres RoadZone", "dev")
                 end
-
-                Movement:RoadZone(self.mapIdToRoad)
-
-                --Utils:Print("Apres RoadZone", "dev")
             end
         end
-
 
         Utils:Print("Fin move", "dev")
 
@@ -193,11 +382,22 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
         end
     end
 
+    function Movement:IsHarvestableObject(objectId)
+        for _, v in pairs(Info.gatherInfo) do
+            if Utils:Equal(v.objectId, objectId) then
+                return true
+            end
+        end
+        return false
+    end
+
     function Movement:ConfigRoad()
+
         self.mapIdToRoad = {}
         self.pathMine = {}
         self.monsterDropItem = {}
-        local mstrDrop = Monsters:GetMonsterIdByDropId(Craft.itemsToDrop[Craft.currentIndexItemToDrop].itemId)
+        local itemId = Craft.itemsToDrop[Craft.currentIndexItemToDrop].itemId
+        local mstrDrop = Monsters:GetMonsterIdByDropId(itemId)
 
         local function getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
             --Utils:Print("Get rand subArea")
@@ -261,8 +461,8 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             end
         end
 
-        if mstrDrop ~= nil and Utils:LenghtOfTable(mstrDrop) > 0 and Craft.itemsToDrop[Craft.currentIndexItemToDrop].itemId ~= 311 then
-            Utils:Print("Fight mode", "ConfigRoad")
+        if mstrDrop ~= nil and Utils:LenghtOfTable(mstrDrop) > 0 and not self:IsHarvestableObject(itemId) then
+            Utils:Print("Fight mode", "Farming")
             self.dropAction = "fight"
             for _, v in pairs(mstrDrop) do
                 local favArea = Monsters:GetFavoriteSubArea(v)
@@ -313,8 +513,8 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                             MIN_MONSTERS = 1
                             MAX_MONSTERS = 1
                         end
-                        
-                        Utils:Print("Difficulté des monstres établie a " .. MAX_MONSTERS .. " monstres maximum dans le combat !", "Fight")
+
+                        Utils:Print("Difficulté des monstres établie a " .. MAX_MONSTERS .. " monstres maximum dans le combat !", "Farming")
 
                         self.monsterDropItem = mstrDrop
 
@@ -325,70 +525,66 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             end
 
         else
-            Utils:Print("Gather mode", "ConfigRoad")
+            Utils:Print("Gather mode", "Farming")
             self.dropAction = "gather"
             GATHER = {}
 
             for _, vToDrop in pairs(Craft.itemsToDrop) do
-                local isMonsterDrop = Monsters:GetMonsterIdByDropId(vToDrop.itemId)
+                for _, v in pairs(Info.gatherInfo) do
+                    if v.objectId == vToDrop.itemId then
+                        if job:level(v.jobId) < v.minLvlToFarm then
+                            Utils:Print("Vous n'avez pas le niveau requis pour farm la ressouce " .. inventory:itemNameId(v.objectId), "Info")
 
-                --if #isMonsterDrop == 0 or vToDrop.itemId == 311 then
-                    for k, v in pairs(Info.gatherInfo) do
-                        if v.objectId == vToDrop.itemId then
-                            if job:level(v.jobId) < v.minLvlToFarm then
-                                Utils:Print("Vous n'avez pas le niveau requis pour farm la ressouce " .. inventory:itemNameId(v.objectId), "Info")
+                            local possibleResFarm = {}
 
-                                local possibleResFarm = {}
-
-                                for _, v2 in pairs(Info.gatherInfo) do
-                                    if v2.jobId == v.jobId and job:level(v.jobId) >= v2.minLvlToFarm then
-                                        table.insert(possibleResFarm, v2)
-                                    end
-                                end
-
-                                local maxLvl = 0
-                                local gatherIdToFarm = 0
-
-                                for _, vRes in pairs(possibleResFarm) do
-                                    if vRes.minLvlToFarm > maxLvl then
-                                        maxLvl = vRes.minLvlToFarm
-                                        gatherIdToFarm = vRes.gatherId
-                                    end
-                                end
-
-                                if gatherIdToFarm == 0 then
-                                    Utils:Print("GatherIdToFarm = 0", "configroad")
-                                end
-
-                                table.insert(GATHER, gatherIdToFarm)
-
-                                if Craft.itemsToDrop[Craft.currentIndexItemToDrop].itemId == v.objectId then
-                                    local subAreaContainsResToFarm = Zone:RetrieveSubAreaContainingRessource(gatherIdToFarm)
-
-                                    getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
-                                end
-                            else
-                                local gatherIdToFarm = 0
-
-                                for _, vGather in pairs(Info.gatherInfo) do
-                                    if vGather.objectId == vToDrop.itemId then
-                                        gatherIdToFarm = vGather.gatherId
-                                        table.insert(GATHER, vGather.gatherId)
-                                        break
-                                    end
-                                end
-
-                                if Craft.itemsToDrop[Craft.currentIndexItemToDrop].itemId == v.objectId then
-                                    local subAreaContainsResToFarm = Zone:RetrieveSubAreaContainingRessource(gatherIdToFarm)
-
-                                    getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
+                            for _, v2 in pairs(Info.gatherInfo) do
+                                if v2.jobId == v.jobId and job:level(v.jobId) >= v2.minLvlToFarm then
+                                    table.insert(possibleResFarm, v2)
                                 end
                             end
-                            
-                        end
-                    end
 
-                --end
+                            local maxLvl = 0
+                            local gatherIdToFarm = 0
+
+                            for _, vRes in pairs(possibleResFarm) do
+                                if vRes.minLvlToFarm > maxLvl then
+                                    maxLvl = vRes.minLvlToFarm
+                                    gatherIdToFarm = vRes.gatherId
+                                end
+                            end
+
+                            if gatherIdToFarm == 0 then
+                                Utils:Print("GatherIdToFarm = 0", "Error")
+                            end
+
+                            table.insert(GATHER, gatherIdToFarm)
+
+                            if Craft.itemsToDrop[Craft.currentIndexItemToDrop].itemId == v.objectId then
+                                local subAreaContainsResToFarm = Zone:RetrieveSubAreaContainingRessource(gatherIdToFarm)
+                                subAreaContainsResToFarm = Utils:ShuffleTbl(subAreaContainsResToFarm)
+                                getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
+                            end
+                        else
+                            local gatherIdToFarm = 0
+
+                            for _, vGather in pairs(Info.gatherInfo) do
+                                if vGather.objectId == vToDrop.itemId then
+                                    gatherIdToFarm = vGather.gatherId
+                                    table.insert(GATHER, vGather.gatherId)
+                                    break
+                                end
+                            end
+
+                            if Craft.itemsToDrop[Craft.currentIndexItemToDrop].itemId == v.objectId then
+                                local subAreaContainsResToFarm = Zone:RetrieveSubAreaContainingRessource(gatherIdToFarm)
+                                subAreaContainsResToFarm = Utils:ShuffleTbl(subAreaContainsResToFarm)
+                                getRandSubArea(subAreaContainsResToFarm, gatherIdToFarm)
+                            end
+                        end
+                        
+                    end
+                end
+
             end
 
         end
@@ -398,9 +594,52 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
         end
     end
 
+    function Movement:SelectItemToFarm()
+        if not Craft.canCraft and Craft.checkPossibleCraft then
+            local allItemDroped = true
+
+            for _, vDrop in pairs(Craft.itemsToDrop) do
+                if inventory:itemCount(vDrop.itemId) < vDrop.itemsToRetrieve then
+                    allItemDroped = false
+                end
+            end
+
+            if allItemDroped then
+                Utils:Print("Tout les items nécéssaire au craft on était récupérer retour a la bank !", "Craft")
+                Craft.checkPossibleCraft = false
+                Craft.selectedItemToFarm = false
+                Time.TimerInitialized = false
+                self.RoadLoaded = false
+                self.tpZoneFarm = false
+                self.tpBank = false
+                self.configRoad = false
+                self.countFailMoveNext = 0
+                self.lastFailMapId = 0
+                Craft:CraftManager()
+            end
+
+            while not Craft.selectedItemToFarm do
+                if Utils:LenghtOfTable(Craft.itemsToDrop) > 1 then
+                    local rand = global:random(1, Utils:LenghtOfTable(Craft.itemsToDrop))
+
+                    if rand ~= Craft.currentIndexItemToDrop and inventory:itemCount(Craft.itemsToDrop[rand].itemId) < Craft.itemsToDrop[rand].itemsToRetrieve then
+                        Craft.currentIndexItemToDrop = rand
+                        Craft.selectedItemToFarm = true
+                        Utils:Print("Go drop "..inventory:itemNameId(Craft.itemsToDrop[rand].itemId), "Farming")
+                    end
+                else
+                    Craft.currentIndexItemToDrop = 1
+                    Craft.selectedItemToFarm = true
+                    Utils:Print("Go drop "..inventory:itemNameId(Craft.itemsToDrop[1].itemId), "Farming")
+                end
+            end
+        end
+
+    end
+
     function Movement:RoadZone(tblMapId)
         if tblMapId ~= nil and #tblMapId > 0 then
-
+            tblMapId = Utils:ShuffleTbl(tblMapId)
             if map:currentMapId() == self.RZNextMapId or self.RZNextMapId == -1 then
                 self.pathMineLoaded = false
                 self.RZNextMapId = tblMapId[global:random(1, #tblMapId)]
@@ -718,14 +957,6 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
         return dist
     end
 
-    function CB_ZaapDestinations(packet)
-        Movement.iZaapOpen = true
-        Movement.zaapDestinations = {}
-        for _, v in pairs(packet.destinations) do
-            table.insert(Movement.zaapDestinations, v)
-        end
-    end
-
     function CB_LeaveDialogMessage(packet)
         if packet.dialogType == 10 then
             Movement.iZaapOpen = false
@@ -858,51 +1089,13 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             self.propertiesInit = true
         end
 
-        if not self.checkPossibleCraft and not ( Shop.needToGoHDV or Shop.needPriceUpdate ) then
-            if not Movement.inBank then
-                Movement:GoBank()
-            end
-            if Movement.inBank then
-                self:CheckCraft()
-            end
-        end
-
-        if not self.canCraft and self.checkPossibleCraft and not ( Shop.needToGoHDV or Shop.needPriceUpdate ) then
-            local allItemDroped = true
-
-            for _, vDrop in pairs(self.itemsToDrop) do
-                if inventory:itemCount(vDrop.itemId) < vDrop.itemsToRetrieve then
-                    allItemDroped = false
+        if (Config.tradeMode and not ( Shop.needToGoHDV or Shop.needPriceUpdate )) or not Config.tradeMode then
+            if not self.checkPossibleCraft then
+                if not Movement.inBank then
+                    Movement:GoBank()
                 end
-            end
-
-            if allItemDroped then
-                Utils:Print("Tout les items nécéssaire au craft on était récupérer retour a la bank !", "Craft")
-                self.checkPossibleCraft = false
-                self.selectedItemToFarm = false
-                Time.TimerInitialized = false
-                Movement.RoadLoaded = false
-                Movement.tpZoneFarm = false
-                Movement.tpBank = false
-                Movement.configRoad = false
-                Movement.countFailMoveNext = 0
-                Movement.lastFailMapId = 0
-                self:CraftManager()
-            end
-
-            while not self.selectedItemToFarm do
-                if Utils:LenghtOfTable(self.itemsToDrop) > 1 then
-                    local rand = global:random(1, Utils:LenghtOfTable(self.itemsToDrop))
-
-                    if rand ~= self.currentIndexItemToDrop and inventory:itemCount(self.itemsToDrop[rand].itemId) < self.itemsToDrop[rand].itemsToRetrieve then
-                        self.currentIndexItemToDrop = rand
-                        self.selectedItemToFarm = true
-                        Utils:Print("Go drop "..inventory:itemNameId(self.itemsToDrop[rand].itemId), "Info")
-                    end
-                else
-                    self.currentIndexItemToDrop = 1
-                    self.selectedItemToFarm = true
-                    Utils:Print("Go drop "..inventory:itemNameId(self.itemsToDrop[1].itemId), "Info")
+                if Movement.inBank then
+                    self:CheckCraft()
                 end
             end
         end
@@ -1073,11 +1266,10 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             Movement.podsMaxBeforeBank = 101
         else
             self.canCraft = false
-            Shop:ShopManager()
-            if not Shop.needToGoHDV then
-                Movement.podsMaxBeforeBank = global:random(Config.minPercentPodsBeforeBank, Config.maxPercentPodsBeforeBank)
-                Utils:Print("Prochain retour a la banque a " .. Movement.podsMaxBeforeBank .. "% pods", "Info")
-            else
+            if Config.tradeMode then
+                Shop:ShopManager()
+            end
+            if Shop.needToGoHDV then
                 Movement.podsMaxBeforeBank = 101
             end
         end
@@ -1085,7 +1277,14 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
         --Utils:Dump(self.itemsToDrop)
 
         self.checkPossibleCraft = true
+
         global:leaveDialog()
+
+        if Controller.isControlled then
+            Controller.leader.sendInfo.craft = self
+            Controller.leader.hasAnUpdate = true
+        end
+
         map:changeMap('havenbag')
     end
 
@@ -1225,7 +1424,6 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     Shop.currentShopInfo = {}
 
     function Shop:ShopManager()
-
         if self.currentInterval >= Config.tradeInterval and not self.needPriceUpdate then
             Craft.checkPossibleCraft = false
         end
@@ -1249,7 +1447,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             elseif Utils:LenghtOfTable(self.itemsToBuy) > 0 then
                 self.currentMode = "buy"
             else
-                Utils:Print("Tous les items on était mit en vente/acheter", "Trade")
+                Utils:Print("Tous les items on était mit en vente/acheter", "Trading")
                 self.needToGoHDV = false
             end
 
@@ -1280,7 +1478,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
             self:SelectHdvToUpdate()
 
             if not self.printInfo then
-                Utils:Print("Actualisation du prix des items en hotel de vente, au lancement du script le bot fera le tour des hotel de vente", "Trade")
+                Utils:Print("Actualisation du prix des items en hotel de vente, au lancement du script le bot fera le tour des hotel de vente", "Trading")
                 self.printInfo = true
             end
 
@@ -1293,14 +1491,14 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                         Movement:LoadRoad(self.currentShopInfo.shopMapId)
                         Movement:MoveNext()
                     elseif map:currentMapId() == self.currentShopInfo.shopMapId then
-                        Utils:Print("Arrivé a l'hotel de vente", "dev")
+                        --Utils:Print("Arrivé a l'hotel de vente", "dev")
                         self:UseHdv()
                         self.currentShopInfo = {}
                         self:ShopManager()
                     end
                 end
             else
-                Utils:Print("Les prix de tout les hotel de vente on était actualisé", "Trade")
+                Utils:Print("Les prix de tout les hotel de vente on était actualisé", "Trading")
                 self.printInfo = false
                 for _, vInfo in pairs(self.infoHdv) do
                     if Utils:LenghtOfTable(vInfo.itemsInHdv) > 0 then
@@ -1337,7 +1535,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     end
 
     function Shop:SellItems()
-        Utils:Print("Mise en vente des items", "Trade")
+        Utils:Print("Mise en vente des items", "Trading")
         local lotConvert = { ["100"] = 3, ["10"] = 2, ["1"] = 1 }
         for _, vItem in pairs(self.itemsToSale[self.selectedTypeHDV]) do
             local maxLotToSell = self:GetMaxLotToSell(vItem.objectId)
@@ -1345,12 +1543,12 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                 local hdvPrice = sale:getPriceItem(vItem.objectId, lotConvert[tostring(vItem.lot)])
 
                 if hdvPrice < vItem.minPrice then
-                    Utils:Print("L'objet [" .. vItem.objectName .. "] ne peut pas être vendu pour le moment, le prix est actuellement inférieur a minPrice", "Trade")
+                    Utils:Print("L'objet [" .. vItem.objectName .. "] ne peut pas être vendu pour le moment, le prix est actuellement inférieur a minPrice", "Trading")
                 elseif hdvPrice > vItem.maxPrice then
-                    Utils:Print("L'objet [" .. vItem.objectName .. "] ne peut pas être vendu pour le moment, le prix est actuellement supérieur a maxPrice", "Trade")
+                    Utils:Print("L'objet [" .. vItem.objectName .. "] ne peut pas être vendu pour le moment, le prix est actuellement supérieur a maxPrice", "Trading")
                 else
                     if self.infoHdv[self.selectedTypeHDV].availableSpace == 0 then
-                        Utils:Print("Plus de place dans l'hotel de vente " .. self.selectedTypeHDV, "Trade")
+                        Utils:Print("Plus de place dans l'hotel de vente " .. self.selectedTypeHDV, "Trading")
                         break
                     elseif self.infoHdv[self.selectedTypeHDV].availableSpace < maxLotToSell then
                         maxLotToSell = self.infoHdv[self.selectedTypeHDV].availableSpace
@@ -1361,7 +1559,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                     end
 
                     for _ = 1, vItem.nbLotToSell do
-                        Utils:Print("Mise en vente de x" .. vItem.lot .. " [" .. vItem.objectName .. "] au prix de " .. hdvPrice .."k", "Trade")
+                        Utils:Print("Mise en vente de x" .. vItem.lot .. " [" .. vItem.objectName .. "] au prix de " .. hdvPrice .."k", "Trading")
                         self.infoHdv[self.selectedTypeHDV].availableSpace = self.infoHdv[self.selectedTypeHDV].availableSpace - 1
                         table.insert(self.infoHdv[self.selectedTypeHDV].itemsInHdv, { itemGID = vItem.objectId, lot = vItem.lot, price = hdvPrice })
                         sale:sellItem(vItem.objectId, vItem.lot, hdvPrice)
@@ -1369,7 +1567,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                 end
 
             elseif maxLotToSell == 0 then
-                Utils:Print("Le nombre de lot max et atteint pour l'item [" .. inventory:itemNameId(vItem.objectId) .. "]", "Trade")
+                Utils:Print("Le nombre de lot max et atteint pour l'item [" .. inventory:itemNameId(vItem.objectId) .. "]", "Trading")
             end
         end
         self.itemsToSale[self.selectedTypeHDV] = nil
@@ -1377,7 +1575,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     end
 
     function Shop:BuyItems()
-        Utils:Print("Achat des items", "Trade")
+        Utils:Print("Achat des items", "Trading")
 
         for _, vItem in pairs(self.itemsToBuy[self.selectedTypeHDV]) do
             local requiredPods = vItem.quantityToBuy * inventory:itemWeight(vItem.objectId)
@@ -1402,7 +1600,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
     end
 
     function Shop:UpdatePrice()
-        Utils:Print("Actualisation des prix de l'hotel de vente " .. self.selectedTypeHDV, "Trade")
+        Utils:Print("Actualisation des prix de l'hotel de vente " .. self.selectedTypeHDV, "Trading")
         local lotConvert = { ["100"] = 3, ["10"] = 2, ["1"] = 1 }
         for i = 1, sale:itemsOnSale() do
             local itemGID = sale:getItemGID(i)
@@ -1412,11 +1610,11 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                 for _, vItem in pairs(Config.salesInfo["Sale"][self.selectedTypeHDV]) do
                     if vItem.objectId == itemGID then
                         if newPrice < vItem.minPrice then
-                            Utils:Print("Le prix de l'item [" .. vItem.objectName .. "] ne peut pas être actualisé, le prix et inférieur a minPrice", "Trade")
+                            Utils:Print("Le prix de l'item [" .. vItem.objectName .. "] ne peut pas être actualisé, le prix et inférieur a minPrice", "Trading")
                         elseif newPrice > vItem.maxPrice then
-                            Utils:Print("Le prix de l'item [" .. vItem.objectName .. "] ne peut pas être actualisé, le prix et supérieur a maxPrice", "Trade")
+                            Utils:Print("Le prix de l'item [" .. vItem.objectName .. "] ne peut pas être actualisé, le prix et supérieur a maxPrice", "Trading")
                         else
-                            Utils:Print("Actualisation du prix de l'item [" .. vItem.objectName .. "] nouveau prix = " .. newPrice .."k", "Trade")
+                            Utils:Print("Actualisation du prix de l'item [" .. vItem.objectName .. "] nouveau prix = " .. newPrice .."k", "Trading")
                             sale:editPrice(sale:getItemGUID(i), newPrice, lot)
                         end
                     end
@@ -1520,7 +1718,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
         self.remainingPods = Character:RemainingPods()
 
         for kType, vType in pairs(Config.salesInfo["Sale"]) do
-            Utils:Print("Vérification des items de type " .. kType .. " a vendre", "Trade")
+            Utils:Print("Vérification des items de type " .. kType .. " a vendre", "Trading")
 
             for _, vObj in pairs(vType) do
                 local objectQuantity = Math:Round(exchange:storageItemQuantity(vObj.objectId), 100, "<")
@@ -1543,7 +1741,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                         local tmpObj = vObj
                         tmpObj.nbLotToSell = objectQuantity / vObj.lot
 
-                        Utils:Print("L'item [" .. vObj.objectName .. "] peut être vendu pour " .. tmpObj.nbLotToSell .." lot de x" .. vObj.lot, kType)
+                        Utils:Print("L'item [" .. vObj.objectName .. "] peut être vendu pour " .. tmpObj.nbLotToSell .." lot de x" .. vObj.lot, "Trading")
 
                         if self.itemsToSale[kType] == nil then
                             self.itemsToSale[kType] = {}
@@ -1560,7 +1758,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
         end
 
         for kType, vType in pairs(Config.salesInfo["Buy"]) do
-            Utils:Print("Vérification des items de type " .. kType .. " a acheter", "Trade")
+            Utils:Print("Vérification des items de type " .. kType .. " a acheter", "Trading")
 
             for _, vObj in pairs(vType) do
                 local base
@@ -1577,7 +1775,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
 
                 if vObj.minStockInBank > objectQuantity then
                     local quantityToBuy = Math:Round(vObj.minStockInBank - objectQuantity, base, ">")
-                    Utils:Print("L'item [" .. vObj.objectName .. "] a besoin d'être acheter, quantité manquante = " .. quantityToBuy, kType)
+                    Utils:Print("L'item [" .. vObj.objectName .. "] a besoin d'être acheter, quantité manquante = " .. quantityToBuy, "Trading")
 
                     local requiredPods = quantityToBuy * inventory:itemWeight(vObj.objectId)
 
@@ -1743,7 +1941,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                         self.currentJob = string.lower(v.job)
                         self.nextTimeToReassignJob = v.finishTime
                         jobAssign = true
-                        Utils:Print("Métier "..self.currentJob.." assigné !", "JOB")
+                        Utils:Print("Métier "..self.currentJob.." assigné !", "Farming")
                         break
                     end
                 end
@@ -1756,13 +1954,14 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
         end
 
         if not jobAssign then
-            Error:ErrorManager("Impossible d'assigner un métier, vérifier la table WORKTIME", "AssignJob")          
+            Utils:Print("Impossible d'assigner un métier, vérifier la table WORKTIME", "Error")
+            global:finishScript()
         end
 
         --SetJobId()
 
         if self.init then
-            Utils:Print("Changement de métier, go farm le métier "..self.currentJob, "job")
+            Utils:Print("Changement de métier, go farm le métier "..self.currentJob, "Farming")
             --ResetScript()
             return --FinDeBoucle()
         else
@@ -1783,7 +1982,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
 
         if not self.TimerInitialized then
             self.TimerRandTimeToWait = global:random(min, max)
-            Utils:Print("Changement de zone dans "..self.TimerRandTimeToWait.." minutes", "Timer")
+            Utils:Print("Changement de zone dans "..self.TimerRandTimeToWait.." minutes", "Farming")
             self.TimerHourStart, self.TimerMinuteStart = Utils:GenerateDateTime("h"), Utils:GenerateDateTime("m")
             self.TimerInitialized = true
         end
@@ -1832,7 +2031,7 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
                 end            
             else -- Désabonnement des packet
                 if developer:isMessageRegistred(kPacketName) then
-                    --Print("Désabonnement du packet : "..packetName, "packet")
+                    Utils:Print("Désabonnement au packet : "..kPacketName, "packet")
                     developer:unRegisterMessage(kPacketName)
                 end
             end
@@ -1848,13 +2047,6 @@ Movement.CheckHavenBag = dofile(global:getCurrentScriptDirectory() .. "\\Multi_H
         end
 
         developer:sendMessage(msg)
-    end
-
-    -- Erreur
-
-    function Error:ErrorManager(msgError, funcName)
-        Utils:Print(msgError..", arrêt du script", funcName, "error")
-        global:finishScript()
     end
 
     -- Monsters

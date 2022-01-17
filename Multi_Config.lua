@@ -1,18 +1,18 @@
 Config = {}
 Config.minMinutesOnFarmingZone, Config.maxMinutesOnFarmingZone = 3, 5
-Config.minPercentPodsBeforeBank, Config.maxPercentPodsBeforeBank = 70, 90
+Config.minPercentPodsBeforeBank, Config.maxPercentPodsBeforeBank = 62, 87
 
 Config.minPercentLifeBeforeFight = 80
 
 Config.houseMode = false -- Active ou désactive le retour maison (true/false)
 
-Config.tradeMode = true -- Active ou désactive la vente/achat automatique (true/false)
-Config.tradeArea = "Bonta" -- Choix de l'endroit pour l'utilisation des HDV (Bonta, Brakmar)
+Config.tradeMode = false -- Active ou désactive la vente/achat automatique (true/false)
+Config.tradeArea = "Bonta" -- Choix de l'endroit pour l'utilisation des HDV (Bonta, Brakmar) Brak non implémenter
 Config.tradeInterval = 4 -- Choix pour la vérification des items a vendre tout les x retour banque/maison
 
 Config.wortimeJob = { -- Format hh:mm
     ["Lundi"] = {
-        { startTime = "05:14", finishTime = "23:59", job = "Bûcheron" },
+        { startTime = "05:14", finishTime = "23:59", job = "Paysan" },
     },
     ["Mardi"] = {
         { startTime = "06:07", finishTime = "23:50", job = "Bûcheron" }
@@ -27,11 +27,30 @@ Config.wortimeJob = { -- Format hh:mm
         { startTime = "06:00", finishTime = "23:59", job = "Bûcheron" },
     },
     ["Samedi"] = {
-        { startTime = "06:00", finishTime = "23:59", job = "Façonneur" }
+        { startTime = "06:00", finishTime = "23:59", job = "Paysan" }
     },
     ["Dimanche"] = {
         { startTime = "00:02", finishTime = "23:50", job = "Alchimiste" },
     }
+}
+
+Config.colorPrint = {
+    ["Craft"] = "#d7fa2a",
+    ["Trading"] = "#00bbff",
+    ["Server"] = "#21c2b4",
+    ["Farming"] = "#a795de",
+    ["Controller"] = "#caf700",
+    ["Info"] = "#00fc4c",
+    ["Bank"] = "#ffaa00",
+    ["Error"] = "#fc0000"
+}
+
+Config.controller = { -- Non implémenter !
+    serverToConnect = "",
+    leaderAccountUsername = "",
+    leaderInGameUsername = "",
+    groupAccountUsername = {""},
+    groupInGameUsername = {""}
 }
 
 -- maxCraftPerDay non implémenter
@@ -192,24 +211,8 @@ Config.salesInfo = {
             --     minPrice = 500,
             --     maxPrice = 10000
             -- },
-            {
-                objectName = "Ebonite",
-                objectId = 746,
-                lot = 100,
-                maxLotInHdv = 10,
-                minPrice = 50000,
-                maxPrice = 200000
-            }
         },
         ["Consommables"] = {
-            {
-                objectName = "Potion Raide Mhor",
-                objectId = 16402,
-                lot = 100,
-                maxLotInHdv = 10,
-                minPrice = 500,
-                maxPrice = 10000
-            }
         },
         ["Runes"] = {
 
@@ -220,18 +223,12 @@ Config.salesInfo = {
     },
     ["Buy"] = {
         ["Ressources"] = {
-            {
-                objectName = "Bave de bouftout",
-                objectId = 385,
-                minStockInBank = 500,
-                maxPrice = 10000
-            },
-            {
-                objectName = "Blé",
-                objectId = 289,
-                minStockInBank = 10000,
-                maxPrice = 10000
-            }
+            -- {
+            --     objectName = "Blé",
+            --     objectId = 289,
+            --     minStockInBank = 0,
+            --     maxPrice = 10000
+            -- },
         },
         ["Consommables"] = {
     

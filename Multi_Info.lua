@@ -207,7 +207,7 @@ Info.workshopInfo = {
     },
     ["Paysan"] = {
         skillId = {27, 47},
-        ["Astrub"] = { mapId = 192937988, workshopId = {
+        ["Astrub"] = { mapId = 192939008, workshopId = {
             ["27"] = { -- Cuire
                 514880,
                 514876
