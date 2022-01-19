@@ -258,7 +258,7 @@ Utils.colorPrint = Config.colorPrint
         Action:OpenBags()
 
         if (Controller.isControlled and Controller:IsLeader()) or not Controller.isControlled then -- Gestion Craft/Shop/Métier
-            if Config.tradeMode then
+            if Config.tradeMode and not Craft.canCraft then
                 Shop:ShopManager()
             end
             Worker:WorkManager()
