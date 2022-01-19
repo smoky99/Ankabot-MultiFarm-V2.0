@@ -275,23 +275,28 @@ Utils.colorPrint = Config.colorPrint
 
                 if self.configRoad then
 
-                    if Movement:InMapChecker(self.mapIdToRoad) then
+                    if self:InMapChecker(self.mapIdToRoad) then
                         local min, max = 0, 0
 
-                        if #self.mapIdToRoad < 5 then
-                            min, max = 1, 2
-                        elseif #self.mapIdToRoad < 10 then
-                            min, max = 2, 4
-                        elseif #self.mapIdToRoad < 15 then
-                            min, max = 3, 4
-                        elseif #self.mapIdToRoad < 20 then
-                            min, max = 4, 5
-                        elseif #self.mapIdToRoad < 25 then
-                            min, max = 5, 6
-                        elseif #self.mapIdToRoad < 30 then
-                            min, max = 6, 8
+                        if Config.minMinutesOnFarmingZone == 0 and Config.maxMinutesOnFarmingZone == 0 then
+                            if #self.mapIdToRoad < 5 then
+                                min, max = 1, 2
+                            elseif #self.mapIdToRoad < 10 then
+                                min, max = 2, 4
+                            elseif #self.mapIdToRoad < 15 then
+                                min, max = 3, 4
+                            elseif #self.mapIdToRoad < 20 then
+                                min, max = 4, 5
+                            elseif #self.mapIdToRoad < 25 then
+                                min, max = 5, 6
+                            elseif #self.mapIdToRoad < 30 then
+                                min, max = 6, 8
+                            else
+                                min, max = 7, 10
+                            end    
                         else
-                            min, max = 7, 10
+                            min = Config.minMinutesOnFarmingZone
+                            max = Config.maxMinutesOnFarmingZone
                         end
 
                         if Time:Timer(min, max) then
@@ -354,8 +359,10 @@ Utils.colorPrint = Config.colorPrint
                         end
                     else
                         --Utils:Dump(GATHER)
-                        Action:Gather()
-                        map:gather()
+                        if map:currentMap() ~= "0,0" then
+                            Action:Gather()
+                            map:gather()
+                        end
                     end
 
                     Movement:RoadZone(self.mapIdToRoad)

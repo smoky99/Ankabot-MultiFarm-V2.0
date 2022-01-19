@@ -1,12 +1,12 @@
 Config = {}
-Config.minMinutesOnFarmingZone, Config.maxMinutesOnFarmingZone = 3, 5
-Config.minPercentPodsBeforeBank, Config.maxPercentPodsBeforeBank = 62, 87
+Config.minMinutesOnFarmingZone, Config.maxMinutesOnFarmingZone = 0, 0 -- Si 0, 0 temps gérez via le script
+Config.minPercentPodsBeforeBank, Config.maxPercentPodsBeforeBank = 62, 87 -- Pods min, max avant le retour bank
 
-Config.minPercentLifeBeforeFight = 80
+Config.minPercentLifeBeforeFight = 80 -- Pourcentage minimum de vie avant régén
 
 Config.houseMode = false -- Active ou désactive le retour maison (true/false)
 
-Config.tradeMode = true -- Active ou désactive la vente/achat automatique (true/false)
+Config.tradeMode = false -- Active ou désactive la vente/achat automatique (true/false)
 Config.tradeArea = "Bonta" -- Choix de l'endroit pour l'utilisation des HDV (Bonta, Brakmar) Brak non implémenter
 Config.tradeInterval = 4 -- Choix pour la vérification des items a vendre tout les x retour banque/maison
 
@@ -35,7 +35,25 @@ Config.wortimeJob = { -- Format hh:mm
     }
 }
 
-Config.colorPrint = {
+Config.zaapExcepted = { -- Zaap a exclure
+    -- 00000000000,
+    -- 00000000000,
+}
+
+Config.houseInfo = { -- Info pour le retour maison
+    houseOwnerPseudo = "pseudoDuCompteMaison#1234", -- Vous pouvez récupérer votre pseudo dans l'onglet social de dofus
+    houseOutsideMapId = 000000000, -- MapId éxtérieure de la maison
+    houseDoorCellId = 000, -- CellId de la porte
+    housePassword = 000000, -- Mot de passe de la porte
+    chestCellId = 000, -- CellId du coffre
+    chestPassword = 000000, -- Mot de passe du coffre, mettre -1 si le coffre appartient au bot
+    inHousePath = {
+        { map = 000000000, door = "316" }, -- Si votre maison a plusieurs pièces déplacer le bot jusqu'au coffre avec door pour une porte ou path si c'est un soleil
+        { map = 000000000, inTheTrunkMap = true } -- Une fois arriver sur la map du coffre mettre inTheTrunkMap = true
+    }
+}
+
+Config.colorPrint = { -- Couleur des print
     ["Craft"] = "#d7fa2a",
     ["Trading"] = "#00bbff",
     ["Server"] = "#21c2b4",
@@ -56,13 +74,15 @@ Config.controller = { -- Non implémenter !
 
 -- maxCraftPerDay non implémenter
 
-Config.craft = {
+Config.craft = { -- Gestion des craft
     ["Mineur"] = {
         {
             craftName = "Magnesite",
             craftId = 748,
             nbCraftBeforeNextCraft = 50,
-            maxCraftPerDay = 1000
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
         },
     },
     ["Bûcheron"] = {
@@ -86,7 +106,9 @@ Config.craft = {
             craftName = "Substrat de bocage",
             craftId = 12745,
             nbCraftBeforeNextCraft = 100,
-            maxCraftPerDay = 1000
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
         },
     },
     ["Alchimiste"] = {
@@ -94,25 +116,33 @@ Config.craft = {
             craftName = "Levure de boulanger",
             craftId = 286,
             nbCraftBeforeNextCraft = 500,
-            maxCraftPerDay = 1000
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
         },
         {
             craftName = "Potion de Mini Soin",
             craftId = 1182,
             nbCraftBeforeNextCraft = 50,
-            maxCraftPerDay = 1000
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
         },
         {
             craftName = "Potion de Rappel",
             craftId = 548,
             nbCraftBeforeNextCraft = 50,
-            maxCraftPerDay = 1000
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
         },
         {
             craftName = "Potion de souvenir",
             craftId = 7652,
             nbCraftBeforeNextCraft = 50,
-            maxCraftPerDay = 1000
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
         },
     },
     ["Paysan"] = {
@@ -120,7 +150,9 @@ Config.craft = {
             craftName = "Pain d'Incarnam",
             craftId = 468,
             nbCraftBeforeNextCraft = 50,
-            maxCraftPerDay = 1000
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
         },
     },
     ["Pêcheur"] = {
@@ -128,7 +160,9 @@ Config.craft = {
             craftName = "Goujon en tranche",
             craftId = 1813,
             nbCraftBeforeNextCraft = 100,
-            maxCraftPerDay = 1000
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
         },
     },
     ["Tailleur"] = {
@@ -136,13 +170,17 @@ Config.craft = {
             craftName = "Petit Sac en Laine de Boufton",
             craftId = 1697,
             nbCraftBeforeNextCraft = 50,
-            maxCraftPerDay = 1000
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
         },
         {
             craftName = "Le Floude",
             craftId = 8533,
             nbCraftBeforeNextCraft = 50,
-            maxCraftPerDay = 1000
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
         },
     },
     ["Bijoutier"] = {
@@ -150,13 +188,17 @@ Config.craft = {
             craftName = "La destinée dorée",
             craftId = 158,
             nbCraftBeforeNextCraft = 50,
-            maxCraftPerDay = 1000
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
         },
         {
             craftName = "Blessure du Sacrieur",
             craftId = 1493,
             nbCraftBeforeNextCraft = 50,
-            maxCraftPerDay = 1000
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
         },
     },
     ["Cordonnier"] = {
@@ -164,7 +206,9 @@ Config.craft = {
             craftName = "Les Incrustes",
             craftId = 8535,
             nbCraftBeforeNextCraft = 50,
-            maxCraftPerDay = 1000
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
         },
     },
     ["Bricoleur"] = {
@@ -172,7 +216,9 @@ Config.craft = {
             craftName = "Clef des Champs",
             craftId = 8143,
             nbCraftBeforeNextCraft = 50,
-            maxCraftPerDay = 1000
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
         }
     },
     ["Forgeron"] = {
@@ -180,7 +226,9 @@ Config.craft = {
             craftName = "Couteau de Chasse",
             craftId = 1934,
             nbCraftBeforeNextCraft = 50,
-            maxCraftPerDay = 1000
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
         },
     },
     ["Sculpteur"] = {
@@ -188,7 +236,9 @@ Config.craft = {
             craftName = "Demi-Baguette",
             craftId = 1356,
             nbCraftBeforeNextCraft = 50,
-            maxCraftPerDay = 1000
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
         },
     },
     ["Façonneur"] = {
@@ -196,12 +246,14 @@ Config.craft = {
             craftName = "Bouclier du Bûcheron",
             craftId = 18676,
             nbCraftBeforeNextCraft = 50,
-            maxCraftPerDay = 1000
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
         },
     }
 }
 
-Config.salesInfo = {
+Config.salesInfo = { -- Gestion du mode vente
     ["Sale"] = {
         ["Ressources"] = {
             {
@@ -240,23 +292,6 @@ Config.salesInfo = {
         ["Equipements"] = {
     
         }
-    }
-}
-
-Config.zaapExcepted = {
-
-}
-
-Config.houseInfo = {
-    houseOwnerPseudo = "pseudoDuCompteMaison#1234", -- Vous pouvez récupérer votre pseudo dans l'onglet social de dofus
-    houseOutsideMapId = 000000000, -- MapId éxtérieure de la maison
-    houseDoorCellId = 000, -- CellId de la porte
-    housePassword = 000000, -- Mot de passe de la porte
-    chestCellId = 000, -- CellId du coffre
-    chestPassword = 000000, -- Mot de passe du coffre, mettre -1 si le coffre appartient au bot
-    inHousePath = {
-        { map = 000000000, door = "316" }, -- Si votre maison a plusieurs pièces déplacer le bot jusqu'au coffre avec door pour une porte ou path si c'est un soleil
-        { map = 000000000, inTheTrunkMap = true } -- Une fois arriver sur la map du coffre mettre inTheTrunkMap = true
     }
 }
 
