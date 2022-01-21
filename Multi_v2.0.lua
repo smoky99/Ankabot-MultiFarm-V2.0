@@ -1,9 +1,8 @@
+global:loadConfiguration(global:getCurrentScriptDirectory() .. "\\SBConfig.xml")
 GATHER = {}
 
 MIN_MONSTERS, MAX_MONSTERS = 1, 8
 FORBIDDEN_MONSTERS, FORCE_MONSTERS = {}, {}
-
-local bankMapId = 192415750
 
 Config = dofile(global:getCurrentScriptDirectory() .. "\\Multi_Config.lua")
 Info = dofile(global:getCurrentScriptDirectory() .. "\\Multi_Info.lua")
@@ -55,7 +54,6 @@ Utils.colorPrint = Config.colorPrint
 
     Controller.group.newInfo = {}
     Controller.group.sendInfo = {}
-
 
 
     function Controller:ControllerManager()
@@ -198,6 +196,7 @@ Utils.colorPrint = Config.colorPrint
 
     -- Move
     Movement.zaapDestinations = {}
+    Movement.bankMapId = Config.bankMapId
 
     Movement.init = false
     Movement.inBank = false
@@ -235,7 +234,6 @@ Utils.colorPrint = Config.colorPrint
     function Movement:Move()
 
         if not self.init then
-            global:loadConfiguration(global:getCurrentScriptDirectory() .. "\\SBConfig.xml")
             self.init = true
         end
 
@@ -821,12 +819,12 @@ Utils.colorPrint = Config.colorPrint
             self:HavenBag()
 
             if Config.houseMode then
-                bankMapId = Config.houseInfo.houseOutsideMapId
+                self.bankMapId = Config.houseInfo.houseOutsideMapId
             end
 
             if map:currentMap() == "0,0" then
                 self.tpBank = true
-                Movement:UseZaap(bankMapId)
+                self:UseZaap(self.bankMapId)
             end
         end
 
@@ -863,18 +861,18 @@ Utils.colorPrint = Config.colorPrint
             end
         end
 
-        Movement:LoadRoad(bankMapId)
+        self:LoadRoad(self.bankMapId)
 
-        if map:currentMapId() == bankMapId and not Config.houseMode then -- Bank
+        if map:currentMapId() == self.bankMapId and not Config.houseMode then -- Bank
             self.inBank = true
             self.printBank = false
             self.tpBank = false
             self:UseBank()
-        elseif map:currentMapId() == bankMapId and Config.houseMode then -- Maison
+        elseif map:currentMapId() == self.bankMapId and Config.houseMode then -- Maison
             self.inHouse = true
             map:lockedHouse(Config.houseInfo.houseDoorCellId, Config.houseInfo.housePassword, Config.houseInfo.houseOwnerPseudo)
         else
-            Movement:MoveNext()
+            self:MoveNext()
         end
     end
 
@@ -1369,7 +1367,7 @@ Utils.colorPrint = Config.colorPrint
         end
     end
 
-    function Craft:GetCurrentCraft(updateLimite)
+    function Craft:GetCurrentCraft(updateLimit)
         local jobLevel
         for _, v in pairs(self:GetJobCraft()) do
             jobLevel = job:level(Craft:GetJobId(v.craftId))
@@ -1383,7 +1381,7 @@ Utils.colorPrint = Config.colorPrint
                 return ret
             end
         end
-        if updateLimite then
+        if updateLimit then
             Utils:Print("Aucun craft n'a pu être séléctionner vérifier d'avoir ajouter des craft pour le métier " .. Worker.currentJob .. " de niveau inférieur ou égal a " .. jobLevel, "Craft", "error")
             global:finishScript()
         end

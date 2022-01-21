@@ -2,6 +2,8 @@ Config = {}
 Config.minMinutesOnFarmingZone, Config.maxMinutesOnFarmingZone = 0, 0 -- Si 0, 0 temps gérez via le script
 Config.minPercentPodsBeforeBank, Config.maxPercentPodsBeforeBank = 62, 87 -- Pods min, max avant le retour bank
 
+Config.bankMapId = 192415750 -- Mapid intérieur de la bank de votre choix
+
 Config.minPercentLifeBeforeFight = 80 -- Pourcentage minimum de vie avant régén
 
 Config.houseMode = false -- Active ou désactive le retour maison (true/false)
@@ -72,7 +74,12 @@ Config.controller = { -- Non implémenter !
     groupInGameUsername = {""}
 }
 
+-- craftName = nom du craft
+-- craftId = id de l'objet a craft
+-- nbCraftBeforeNextCraft = le nombre de craft a faire avant de passez au prochain craft
 -- maxCraftPerDay non implémenter
+-- minLvlToCraft = Active le craft quand le métier du craft en question atteint cette valeur
+-- maxLvlToCraft = Désactive le craft quand le métier du craft en question atteint cette valeur
 
 Config.craft = { -- Gestion des craft
     ["Mineur"] = {
@@ -252,6 +259,19 @@ Config.craft = { -- Gestion des craft
         },
     }
 }
+
+-- Sales
+  -- objectName = Nom de l'objet
+  -- objectId = Id de l'objet
+  -- lot = Nombre de lot a mettre en vente (1, 10, 100)
+  -- maxLotInHdv = Nombre max de lot de cette item en hdv
+  -- minPrice = Prix mini pour la vente et l'actualisation des prix
+  -- maxPrice = Prix maxi pour la vente et l'actualisation des prix
+-- Buy
+  -- objectName = Nom de l'objet
+  -- objectId = Id de l'objet
+  -- minStockInBank = Quantité mini de l'objet en bank avant le rachat de l'objet
+  -- maxPrice = Prix maxi pour l'achat
 
 Config.salesInfo = { -- Gestion du mode vente
     ["Sale"] = {
