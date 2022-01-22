@@ -4,6 +4,8 @@ Config.minPercentPodsBeforeBank, Config.maxPercentPodsBeforeBank = 62, 87 -- Pod
 
 Config.bankMapId = 192415750 -- Mapid intérieur de la bank de votre choix
 
+Config.workshopArea = "Bonta" -- Choix de l'endroit des ateliers de craft (Random, Bonta, Astrub, Brakmar) Random et brak non implémenter
+
 Config.minPercentLifeBeforeFight = 80 -- Pourcentage minimum de vie avant régén
 
 Config.houseMode = false -- Active ou désactive le retour maison (true/false)
@@ -20,6 +22,7 @@ Config.tradeInterval = 4 -- Choix pour la vérification des items a vendre tout 
     -- Bûcheron
     -- Mineur
     -- Pêcheur
+    -- Chasseur
     -- Bijoutier
     -- Cordonnier
     -- Tailleur
@@ -45,7 +48,7 @@ Config.wortimeJob = { -- Format hh:mm
         { startTime = "06:00", finishTime = "23:59", job = "Bûcheron" },
     },
     ["Samedi"] = {
-        { startTime = "06:00", finishTime = "23:59", job = "Mineur" }
+        { startTime = "06:00", finishTime = "23:59", job = "Chasseur" }
     },
     ["Dimanche"] = {
         { startTime = "00:02", finishTime = "23:50", job = "Alchimiste" },
@@ -190,6 +193,16 @@ Config.craft = { -- Gestion des craft
             craftName = "Goujon en tranche",
             craftId = 1813,
             nbCraftBeforeNextCraft = 100,
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
+        },
+    },
+    ["Chasseur"] = {
+        {
+            craftName = "Bouillon de Chair",
+            craftId = 16670,
+            nbCraftBeforeNextCraft = 1,
             maxCraftPerDay = 1000,
             minLvlToCraft = 1,
             maxLvlToCraft = 200

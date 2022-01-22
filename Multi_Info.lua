@@ -190,7 +190,24 @@ Info.workshopInfo = {
                     515702
                 }
             }
+        },
+        ["Bonta"] = {
+            ["32"] = { -- Fondre
+                mapId = 217060356,
+                workshopId = {
+                    521478,
+                    521474
+                }
+            },
+            ["48"] = { -- Polir
+                mapId = 217061380,
+                workshopId = {
+                    521483,
+                    521482
+                }
+            }
         }
+
     },
     ["Bûcheron"] = {
         skillId = {101},
@@ -200,6 +217,16 @@ Info.workshopInfo = {
                 workshopId = {
                     516166,
                     515493
+                }
+            }
+        },
+        ["Bonta"] = {
+            ["101"] = {
+                mapId = 217063430,
+                workshopId = {
+                    521477,
+                    521476,
+                    521475
                 }
             }
         }
@@ -213,6 +240,15 @@ Info.workshopInfo = {
                     515520,
                     515549,
                     515516
+                }
+            }
+        },
+        ["Bonta"] = {
+            ["23"] = {
+                mapId = 217057284,
+                workshopId = {
+                    521386,
+                    523984
                 }
             }
         }
@@ -234,6 +270,22 @@ Info.workshopInfo = {
                     516162
                 }
             },
+        },
+        ["Bonta"] = {
+            ["27"] = { -- Cuire
+                mapId = 217061382,
+                workshopId = {
+                    521568,
+                    521569
+                }
+            },
+            ["47"] = { -- Moudre
+                mapId = 217061382,
+                workshopId = {
+                    521460,
+                    521459
+                }
+            },
         }
     },
     ["Pêcheur"] = {
@@ -244,6 +296,38 @@ Info.workshopInfo = {
                 workshopId = {
                     515961,
                     516163
+                }
+            }
+        },
+        ["Bonta"] = {
+            ["135"] = {
+                mapId = 217062406,
+                workshopId = {
+                    521467,
+                    521464,
+                    521463
+                }
+            }
+        }
+    },
+    ["Chasseur"] = {
+        skillId = {134},
+        ["Astrub"] = {
+            ["134"] = {
+                mapId = 192937994,
+                workshopId = {
+                    515869
+                }
+            }
+        },
+        ["Bonta"] = {
+            ["134"] = {
+                mapId = 217062404,
+                workshopId = {
+                    521493,
+                    521490,
+                    521489,
+                    521492
                 }
             }
         }
@@ -259,6 +343,16 @@ Info.workshopInfo = {
                     515147
                 }
             }
+        },
+        ["Bonta"] = {
+            ["63"] = {
+                mapId = 217056260,
+                workshopId = {
+                    523819,
+                    521377,
+                    523886
+                }
+            }
         }
     },
     ["Bijoutier"] = {
@@ -271,6 +365,16 @@ Info.workshopInfo = {
                     515739,
                     516168,
                     516169
+                }
+            }
+        },
+        ["Bonta"] = {
+            ["12"] = {
+                mapId = 217058310,
+                workshopId = {
+                    521413,
+                    521671,
+                    521672
                 }
             }
         }
@@ -351,6 +455,15 @@ Info.workshopInfo = {
                     515689
                 }
             }
+        },
+        ["Bonta"] = {
+            ["171"] = {
+                mapId = 217059334,
+                workshopId = {
+                    521442,
+                    521441
+                }
+            }
         }
     },
     ["Façonneur"] = {
@@ -380,7 +493,34 @@ Info.workshopInfo = {
                     518018
                 }
             }
+        },
+        ["Bonta"] = {
+            ["156"] = { -- Bouclier
+                mapId = 217059332,
+                workshopId = {
+                    521454
+                }
+            },
+            ["297"] = { -- Idole
+                mapId = 217059332,
+                workshopId = {
+                    521443
+                }
+            },
+            ["201"] = { -- Trophée
+                mapId = 217059332,
+                workshopId = {
+                    521673
+                }
+            },
+            ["380"] = { -- Prysmaradite
+                mapId = 217059332,
+                workshopId = {
+                    523888
+                }
+            }
         }
+
     }
 }
 

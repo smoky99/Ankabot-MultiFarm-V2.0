@@ -1108,7 +1108,7 @@ Utils.colorPrint = Config.colorPrint
         if self.canCraft then
 
             if not self.workshopInfoInitialized then
-                local workshopInfo = self:GetCurrentWorkShopInfo("Astrub")
+                local workshopInfo = self:GetCurrentWorkShopInfo(Config.workshopArea)
 
                 for kSkillId, vTbl in pairs(workshopInfo) do
                     if Utils:Equal(kSkillId, self.currentCraft.skillId) then
@@ -1121,7 +1121,7 @@ Utils.colorPrint = Config.colorPrint
                 end
 
                 if not self.workshopInfoInitialized then
-                    Utils:Print("Aucun workshop trouvée !", "error")
+                    Utils:Print("Aucun ateliers trouvée !", "error")
                 end
             end
 
@@ -1180,7 +1180,7 @@ Utils.colorPrint = Config.colorPrint
         end
 
         if workshopAreaInfo ~= nil then
-            if Utils:Equal(area, "rand") then
+            if Utils:Equal(area, "Random") then
                 -- A faire !!!
             else
                 for kArea, vWorkShopInfo in pairs(workshopAreaInfo) do
@@ -1190,7 +1190,8 @@ Utils.colorPrint = Config.colorPrint
                 end
             end
         end
-        Utils:Print("Erreur workshopInfo = nil", "Craft:GetCurrentWorkshopMapId()", "error")
+
+        Utils:Print("Impossible de trouver un atelier pour le métier [" .. job:name(self.currentCraft.jobId) .. "] dans la zone de [" .. area .. "]", "error")
         global:finishScript()
     end
 
