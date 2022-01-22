@@ -242,7 +242,7 @@ Utils.colorPrint = Config.colorPrint
         Packet:SubManager({["LeaveDialogMessage"] = CB_LeaveDialogMessage, ["TextInformationMessage"] = CB_TextInformationMessage}, true)
         self.inBank = false
 
-        if not self.updateLimitPods and Craft.checkPossibleCraft and not Craft.canCraft then -- Maj PODS
+        if not self.updateLimitPods and Craft.checkPossibleCraft and not Craft.canCraft and not Shop.needToGoHDV then -- Maj PODS
             self.podsMaxBeforeBank = global:random(Config.minPercentPodsBeforeBank, Config.maxPercentPodsBeforeBank)
             Utils:Print("Prochain retour a la banque a " .. Movement.podsMaxBeforeBank .. "% pods", "Bank")
             self.updateLimitPods = true
@@ -1181,7 +1181,8 @@ Utils.colorPrint = Config.colorPrint
 
         if workshopAreaInfo ~= nil then
             if Utils:Equal(area, "Random") then
-                -- A faire !!!
+                local possibility = {"Brakmar", "Bonta", "Astrub"}
+                return workshopAreaInfo[possibility[global:random(1, #possibility)]]
             else
                 for kArea, vWorkShopInfo in pairs(workshopAreaInfo) do
                     if Utils:Equal(kArea, area) then
@@ -1521,19 +1522,16 @@ Utils.colorPrint = Config.colorPrint
 
         if self.currentMode == "sale" then
             npc:npc(self.currentShopInfo.elementId, 5)
-            global:delay(10000)
             self:UpdateInfoItemsOnSale()
             self:UpdatePrice()
             self:SellItems()
         elseif self.currentMode == "update" then
             npc:npc(self.currentShopInfo.elementId, 5)
-            global:delay(10000)
             self:UpdateInfoItemsOnSale()
             self:UpdatePrice()
             global:leaveDialog()
         elseif self.currentMode == "buy" then
             npc:npc(self.currentShopInfo.elementId, 6)
-            global:delay(10000)
             self:BuyItems()
         end
 
@@ -1677,14 +1675,14 @@ Utils.colorPrint = Config.colorPrint
             for kType, _ in pairs(self.itemsToSale) do
                 --Utils:Print("Selection de l'hotel de vente " ..kType, "dev")
                 self.selectedTypeHDV = tostring(kType)
-                self.currentShopInfo = self:GetShopInfo("bonta", kType)
+                self.currentShopInfo = self:GetShopInfo(Config.tradeArea, kType)
                 break
             end
         else
             for kType, _ in pairs(self.itemsToBuy) do
                 --Utils:Print("Selection de l'hotel de vente " ..kType, "dev")
                 self.selectedTypeHDV = tostring(kType)
-                self.currentShopInfo = self:GetShopInfo("bonta", kType)
+                self.currentShopInfo = self:GetShopInfo(Config.tradeArea, kType)
                 break
             end
         end
@@ -1696,7 +1694,7 @@ Utils.colorPrint = Config.colorPrint
             if not vInfo.priceUpdated then
                 allUpdated = false
                 self.selectedTypeHDV = tostring(kType)
-                self.currentShopInfo = self:GetShopInfo("bonta", kType)
+                self.currentShopInfo = self:GetShopInfo(Config.tradeArea, kType)
                 break
             end
         end
@@ -1715,7 +1713,8 @@ Utils.colorPrint = Config.colorPrint
                 end
             end
         end
-        Utils:Print("Impossible de trouver les info du shop " .. hdvType .. " dans la zone de " .. area, "dev")
+        Utils:Print("Impossible de trouver les info du shop " .. hdvType .. " dans la zone de " .. area, "error")
+        global:finishScript()
         return nil
     end
 

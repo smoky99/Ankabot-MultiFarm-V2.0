@@ -2,16 +2,16 @@ Config = {}
 Config.minMinutesOnFarmingZone, Config.maxMinutesOnFarmingZone = 0, 0 -- Si 0, 0 temps gérez via le script
 Config.minPercentPodsBeforeBank, Config.maxPercentPodsBeforeBank = 62, 87 -- Pods min, max avant le retour bank
 
-Config.bankMapId = 192415750 -- Mapid intérieur de la bank de votre choix
+Config.bankMapId = 214696968 -- Mapid intérieur de la bank de votre choix
 
-Config.workshopArea = "Bonta" -- Choix de l'endroit des ateliers de craft (Random, Bonta, Astrub, Brakmar) Random et brak non implémenter
+Config.workshopArea = "Random" -- Choix de l'endroit des ateliers de craft (Random, Bonta, Astrub, Brakmar)
 
 Config.minPercentLifeBeforeFight = 80 -- Pourcentage minimum de vie avant régén
 
 Config.houseMode = false -- Active ou désactive le retour maison (true/false)
 
-Config.tradeMode = false -- Active ou désactive la vente/achat automatique (true/false)
-Config.tradeArea = "Bonta" -- Choix de l'endroit pour l'utilisation des HDV (Bonta, Brakmar) Brak non implémenter
+Config.tradeMode = true -- Active ou désactive la vente/achat automatique (true/false)
+Config.tradeArea = "Brakmar" -- Choix de l'endroit pour l'utilisation des HDV (Bonta, Brakmar)
 Config.tradeInterval = 4 -- Choix pour la vérification des items a vendre tout les x retour banque/maison
 
 

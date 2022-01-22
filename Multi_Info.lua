@@ -206,8 +206,21 @@ Info.workshopInfo = {
                     521482
                 }
             }
+        },
+        ["Brakmar"] = {
+            ["32"] = { -- Fondre
+                mapId = 213647362,
+                workshopId = {
+                    520972
+                }
+            },
+            ["48"] = { -- Polir
+                mapId = 213647362,
+                workshopId = {
+                    523856
+                }
+            }
         }
-
     },
     ["Bûcheron"] = {
         skillId = {101},
@@ -227,6 +240,15 @@ Info.workshopInfo = {
                     521477,
                     521476,
                     521475
+                }
+            }
+        },
+        ["Brakmar"] = {
+            ["101"] = {
+                mapId = 213648642,
+                workshopId = {
+                    523861,
+                    521146
                 }
             }
         }
@@ -249,6 +271,15 @@ Info.workshopInfo = {
                 workshopId = {
                     521386,
                     523984
+                }
+            }
+        },
+        ["Brakmar"] = {
+            ["23"] = {
+                mapId = 213647618,
+                workshopId = {
+                    521422,
+                    521421
                 }
             }
         }
@@ -286,6 +317,21 @@ Info.workshopInfo = {
                     521459
                 }
             },
+        },
+        ["Brakmar"] = {
+            ["27"] = { -- Cuire
+                mapId = 213649410,
+                workshopId = {
+                    521069
+                }
+            },
+            ["47"] = { -- Moudre
+                mapId = 213649410,
+                workshopId = {
+                    521068,
+                    521067
+                }
+            },
         }
     },
     ["Pêcheur"] = {
@@ -308,7 +354,17 @@ Info.workshopInfo = {
                     521463
                 }
             }
+        },
+        ["Brakmar"] = {
+            ["135"] = {
+                mapId = 213647364,
+                workshopId = {
+                    521075,
+                    521636
+                }
+            }
         }
+
     },
     ["Chasseur"] = {
         skillId = {134},
@@ -328,6 +384,16 @@ Info.workshopInfo = {
                     521490,
                     521489,
                     521492
+                }
+            }
+        },
+        ["Brakmar"] = {
+            ["134"] = {
+                mapId = 213648388,
+                workshopId = {
+                    521084,
+                    521082,
+                    521083
                 }
             }
         }
@@ -351,6 +417,16 @@ Info.workshopInfo = {
                     523819,
                     521377,
                     523886
+                }
+            }
+        },
+        ["Brakmar"] = {
+            ["63"] = {
+                mapId = 213650432,
+                workshopId = {
+                    521076,
+                    521538,
+                    521635
                 }
             }
         }
@@ -377,6 +453,16 @@ Info.workshopInfo = {
                     521672
                 }
             }
+        },
+        ["Brakmar"] = {
+            ["12"] = {
+                mapId = 213649408,
+                workshopId = {
+                    520980,
+                    521010,
+                    520979
+                }
+            }
         }
     },
     ["Cordonnier"] = {
@@ -400,6 +486,17 @@ Info.workshopInfo = {
                     521399
                 }
             }
+        },
+        ["Brakmar"] = {
+            ["13"] = {
+                mapId = 213650690,
+                workshopId = {
+                    521182,
+                    521178,
+                    521179,
+                    521181
+                }
+            }
         }
     },
     ["Forgeron"] = {
@@ -419,6 +516,15 @@ Info.workshopInfo = {
                     522298,
                     524084,
                     524086
+                }
+            }
+        },
+        ["Brakmar"] = {
+            ["20"] = {
+                mapId = 213648386,
+                workshopId = {
+                    521186,
+                    523855
                 }
             }
         }
@@ -443,6 +549,15 @@ Info.workshopInfo = {
                     521432
                 }
             }
+        },
+        ["Brakmar"] = {
+            ["15"] = {
+                mapId = 213648384,
+                workshopId = {
+                    521165,
+                    520983
+                }
+            }
         }
     },
     ["Bricoleur"] = {
@@ -462,6 +577,15 @@ Info.workshopInfo = {
                 workshopId = {
                     521442,
                     521441
+                }
+            }
+        },
+        ["Brakmar"] = {
+            ["171"] = {
+                mapId = 213649412,
+                workshopId = {
+                    521180,
+                    521184
                 }
             }
         }
@@ -519,8 +643,33 @@ Info.workshopInfo = {
                     523888
                 }
             }
+        },
+        ["Brakmar"] = {
+            ["156"] = { -- Bouclier
+                mapId = 213650438,
+                workshopId = {
+                    523974
+                }
+            },
+            ["297"] = { -- Idole
+                mapId = 213650438,
+                workshopId = {
+                    523734
+                }
+            },
+            ["201"] = { -- Trophée
+                mapId = 213650438,
+                workshopId = {
+                    523736
+                }
+            },
+            ["380"] = { -- Prysmaradite
+                mapId = 213650438,
+                workshopId = {
+                    523735
+                }
+            }
         }
-
     }
 }
 
@@ -541,6 +690,24 @@ Info.shopInfo = {
         ["Runes"] = {
             shopMapId = 212601859,
             elementId = 522693
+        }
+    },
+    ["Brakmar"] = {
+        ["Ressources"] = {
+            shopMapId = 212861952,
+            elementId = 523612
+        },
+        ["Consommables"] = {
+            shopMapId = 212863491,
+            elementId = 523616
+        },
+        ["Equipements"] = {
+            shopMapId = 212860930,
+            elementId = 523615
+        },
+        ["Runes"] = {
+            shopMapId = 212861957,
+            elementId = 523617
         }
     }
 }
