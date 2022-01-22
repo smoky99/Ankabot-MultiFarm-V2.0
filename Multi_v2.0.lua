@@ -240,18 +240,8 @@ Utils.colorPrint = Config.colorPrint
         Controller:ControllerManager()
 
         Packet:SubManager({["LeaveDialogMessage"] = CB_LeaveDialogMessage, ["TextInformationMessage"] = CB_TextInformationMessage}, true)
-        self.inBank = false
 
-        if not self.updateLimitPods and Craft.checkPossibleCraft and not Craft.canCraft and not Shop.needToGoHDV then -- Maj PODS
-            self.podsMaxBeforeBank = global:random(Config.minPercentPodsBeforeBank, Config.maxPercentPodsBeforeBank)
-            Utils:Print("Prochain retour a la banque a " .. Movement.podsMaxBeforeBank .. "% pods", "Bank")
-            self.updateLimitPods = true
-        end
-
-        if inventory:podsP() >= self.podsMaxBeforeBank and not Controller.isControlled then -- Vérif pods retour bank
-            Craft.checkPossibleCraft = false
-            self.updateLimitPods = false
-        end
+        self:BankManager()
 
         Action:OpenBags()
 
@@ -789,6 +779,21 @@ Utils.colorPrint = Config.colorPrint
             end
         end
         return false
+    end
+
+    function Movement:BankManager()
+        self.inBank = false
+
+        if not self.updateLimitPods and Craft.checkPossibleCraft and not Craft.canCraft and not Shop.needToGoHDV then -- Maj PODS
+            self.podsMaxBeforeBank = global:random(Config.minPercentPodsBeforeBank, Config.maxPercentPodsBeforeBank)
+            Utils:Print("Prochain retour a la banque a " .. Movement.podsMaxBeforeBank .. "% pods", "Bank")
+            self.updateLimitPods = true
+        end
+
+        if inventory:podsP() >= self.podsMaxBeforeBank and not Controller.isControlled then -- Vérif pods retour bank
+            Craft.checkPossibleCraft = false
+            self.updateLimitPods = false
+        end
     end
 
     function Movement:Bank()
@@ -1918,10 +1923,61 @@ Utils.colorPrint = Config.colorPrint
     Worker.init = false
     Worker.nextTimeToReassignJob = ""
     Worker.currentJob = ""
+    Worker.printAfk = false
 
     function Worker:WorkManager()
         if not self.init or self.nextTimeToReassignJob == os.date("%H:%M") then
             self:AssignJob()
+        end
+
+        if Utils:Equal(self.currentJob, "Déconnecté") then
+            self:Disconnect()
+            self:WorkManager()
+        end
+
+        if Utils:Equal(self.currentJob, "Afk") then
+            if not self.printAfk then
+                Utils:Print("Go AFK !", "Info")
+                self.printAfk = true
+                Movement:HavenBag()
+            end
+
+            if map:currentMapId() ~= Config.afkMapId then
+                if map:currentMap() == "0,0" then
+                    Movement:UseZaap(Config.afkMapId)
+                end
+
+                Movement:LoadRoad(Config.afkMapId)
+                Movement:MoveNext()
+                self:WorkManager()
+            else
+                local hour, minute = Utils:GenerateDateTime("h"), Utils:GenerateDateTime("m")
+                local totalTimeToAfk = 0
+                local hourFinish, minuteFinish = tonumber(string.match(self.nextTimeToReassignJob, "%d%d")), tonumber(string.match(self.nextTimeToReassignJob, "%d%d", 2))
+
+                totalTimeToAfk = math.abs((hour - hourFinish) * 60)
+                totalTimeToAfk = totalTimeToAfk + math.abs(minute - minuteFinish)
+
+                if math.abs(hour - hourFinish) == 0 then
+                    Utils:Print("Go AFK pendant " .. math.abs(minute - minuteFinish) .. " minutes", "Info")
+                else
+                    if math.abs(minute - minuteFinish) < 10 then
+                        Utils:Print("Go AFK pendant " .. math.abs(hour - hourFinish) .. "h" .. "0" .. math.abs(minute - minuteFinish), "Info")
+                    else
+                        Utils:Print("Go AFK pendant " .. math.abs(hour - hourFinish) .. "h" .. math.abs(minute - minuteFinish), "Info")
+                    end
+                end
+
+                map:moveToCell(Config.afkCellId)
+
+                Packet:SendPacket("GameMapChangeOrientationRequestMessage", function(msg)
+                    msg.direction = Config.afkOrientation
+                    return msg
+                end)
+
+                global:delay((totalTimeToAfk * 60) * 1000)
+            end
+
         end
     end
 
@@ -1956,31 +2012,44 @@ Utils.colorPrint = Config.colorPrint
             end
         end
 
-        if Utils:Equal(self.currentJob, "Déconnecté") then
-            local totalMinuteToDeconnect = 0
-            local hourFinish, minuteFinish = tonumber(string.match(self.nextTimeToReassignJob, "%d%d")), tonumber(string.match(self.nextTimeToReassignJob, "%d%d", 2))
-
-            totalMinuteToDeconnect = math.abs((hour - hourFinish) * 60)
-            totalMinuteToDeconnect = totalMinuteToDeconnect + math.abs(minute - minuteFinish)
-
-            Utils:Print("Déconnexion du personnage pendant " .. math.abs(hour - hourFinish) .. "h" .. math.abs(minute - minuteFinish), "Farming")
-            global:reconnectBis(totalMinuteToDeconnect)
-        end
-
         if not jobAssign then
             Utils:Print("Impossible d'assigner un métier, vérifier la table WORKTIME", "Error")
             global:finishScript()
         end
 
-
-
         if self.init then
-            Utils:Print("Changement de métier, go farm le métier "..self.currentJob, "Farming")
+            if not Utils:Equal(self.currentJob, "Déconnecté") and not Utils:Equal(self.currentJob, "Afk") then
+                Utils:Print("Changement de métier, go farm le métier "..self.currentJob, "Farming")
+            end
             return
         else
-            Utils:Print("Métier "..self.currentJob.." assigné !", "Farming")
+            if not Utils:Equal(self.currentJob, "Déconnecté") and not Utils:Equal(self.currentJob, "Afk") then
+                Utils:Print("Métier "..self.currentJob.." assigné !", "Farming")
+            end
             self.init = true
         end
+    end
+
+    function Worker:Disconnect()
+        local hour, minute = Utils:GenerateDateTime("h"), Utils:GenerateDateTime("m")
+        local totalMinuteToDeconnect = 0
+        local hourFinish, minuteFinish = tonumber(string.match(self.nextTimeToReassignJob, "%d%d")), tonumber(string.match(self.nextTimeToReassignJob, "%d%d", 2))
+
+        totalMinuteToDeconnect = math.abs((hour - hourFinish) * 60)
+        totalMinuteToDeconnect = totalMinuteToDeconnect + math.abs(minute - minuteFinish)
+
+
+        if math.abs(hour - hourFinish) == 0 then
+            Utils:Print("Déconnexion du personnage pendant " .. math.abs(minute - minuteFinish) .. " minutes", "Info")
+        else
+            if math.abs(minute - minuteFinish) < 10 then
+                Utils:Print("Déconnexion du personnage pendant " .. math.abs(hour - hourFinish) .. "h" .. "0" .. math.abs(minute - minuteFinish), "Info")
+            else
+                Utils:Print("Déconnexion du personnage pendant " .. math.abs(hour - hourFinish) .. "h" .. math.abs(minute - minuteFinish), "Info")
+            end
+        end
+
+        global:reconnectBis(totalMinuteToDeconnect)
     end
 
     -- Time

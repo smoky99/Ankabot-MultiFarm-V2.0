@@ -14,9 +14,24 @@ Config.tradeMode = true -- Active ou désactive la vente/achat automatique (true
 Config.tradeArea = "Brakmar" -- Choix de l'endroit pour l'utilisation des HDV (Bonta, Brakmar)
 Config.tradeInterval = 4 -- Choix pour la vérification des items a vendre tout les x retour banque/maison
 
+Config.afkMapId = 191105026 -- MapId ou le bot ira afk
+
+-- Orientation
+    -- droite = 0
+    -- droite-bas = 1
+    -- bas = 2
+    -- gauche-bas = 3
+    -- gauche = 4
+    -- gauche-haut = 5
+    -- haut = 6
+    -- droite-haut = 7
+
+Config.afkOrientation = 3 -- Orientation du bot sur la cellid
+Config.afkCellId = 319 -- Cellid ou le bot ira Afk
 
 -- Job possible
-    -- Déconnecté = Déconnexion de personnage pendant un certain temps
+    -- Déconnecté = Déconnexion du personnage pendant le temps que vous aurez definie
+    -- Afk = Afk sur la map souhaiter pendant le temps que vous aurez definie
     -- Paysan
     -- Alchimiste
     -- Bûcheron
@@ -48,7 +63,9 @@ Config.wortimeJob = { -- Format hh:mm
         { startTime = "06:00", finishTime = "23:59", job = "Bûcheron" },
     },
     ["Samedi"] = {
-        { startTime = "06:00", finishTime = "23:59", job = "Chasseur" }
+        { startTime = "06:00", finishTime = "21:15", job = "Afk" },
+        { startTime = "21:06", finishTime = "23:59", job = "Déconnecté" },
+
     },
     ["Dimanche"] = {
         { startTime = "00:02", finishTime = "23:50", job = "Alchimiste" },
