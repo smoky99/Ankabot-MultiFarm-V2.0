@@ -1946,7 +1946,6 @@ Utils.colorPrint = Config.colorPrint
                         self.currentJob = string.lower(v.job)
                         self.nextTimeToReassignJob = v.finishTime
                         jobAssign = true
-                        Utils:Print("Métier "..self.currentJob.." assigné !", "Farming")
                         break
                     end
                 end
@@ -1958,18 +1957,29 @@ Utils.colorPrint = Config.colorPrint
             end
         end
 
+        if Utils:Equal(self.currentJob, "Déconnecté") then
+            local totalMinuteToDeconnect = 0
+            local hourFinish, minuteFinish = tonumber(string.match(self.nextTimeToReassignJob, "%d%d")), tonumber(string.match(self.nextTimeToReassignJob, "%d%d", 2))
+
+            totalMinuteToDeconnect = math.abs((hour - hourFinish) * 60)
+            totalMinuteToDeconnect = totalMinuteToDeconnect + math.abs(minute - minuteFinish)
+
+            Utils:Print("Déconnexion du personnage pendant " .. math.abs(hour - hourFinish) .. "h" .. math.abs(minute - minuteFinish), "Farming")
+            global:reconnectBis(totalMinuteToDeconnect)
+        end
+
         if not jobAssign then
             Utils:Print("Impossible d'assigner un métier, vérifier la table WORKTIME", "Error")
             global:finishScript()
         end
 
-        --SetJobId()
+
 
         if self.init then
             Utils:Print("Changement de métier, go farm le métier "..self.currentJob, "Farming")
-            --ResetScript()
-            return --FinDeBoucle()
+            return
         else
+            Utils:Print("Métier "..self.currentJob.." assigné !", "Farming")
             self.init = true
         end
     end

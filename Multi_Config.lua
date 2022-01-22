@@ -12,6 +12,21 @@ Config.tradeMode = false -- Active ou désactive la vente/achat automatique (tru
 Config.tradeArea = "Bonta" -- Choix de l'endroit pour l'utilisation des HDV (Bonta, Brakmar) Brak non implémenter
 Config.tradeInterval = 4 -- Choix pour la vérification des items a vendre tout les x retour banque/maison
 
+
+-- Job possible
+    -- Déconnecté = Déconnexion de personnage pendant un certain temps
+    -- Paysan
+    -- Alchimiste
+    -- Bûcheron
+    -- Mineur
+    -- Pêcheur
+    -- Bijoutier
+    -- Cordonnier
+    -- Tailleur
+    -- Bricoleur
+    -- Forgeron
+    -- Sculpteur
+
 Config.wortimeJob = { -- Format hh:mm
     ["Lundi"] = {
         { startTime = "05:14", finishTime = "12:59", job = "Paysan" },
@@ -30,7 +45,7 @@ Config.wortimeJob = { -- Format hh:mm
         { startTime = "06:00", finishTime = "23:59", job = "Bûcheron" },
     },
     ["Samedi"] = {
-        { startTime = "06:00", finishTime = "23:59", job = "Paysan" }
+        { startTime = "06:00", finishTime = "07:59", job = "Déconnecté" }
     },
     ["Dimanche"] = {
         { startTime = "00:02", finishTime = "23:50", job = "Alchimiste" },
