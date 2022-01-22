@@ -45,7 +45,7 @@ Config.wortimeJob = { -- Format hh:mm
         { startTime = "06:00", finishTime = "23:59", job = "Bûcheron" },
     },
     ["Samedi"] = {
-        { startTime = "06:00", finishTime = "07:59", job = "Déconnecté" }
+        { startTime = "06:00", finishTime = "23:59", job = "Mineur" }
     },
     ["Dimanche"] = {
         { startTime = "00:02", finishTime = "23:50", job = "Alchimiste" },
@@ -98,6 +98,14 @@ Config.controller = { -- Non implémenter !
 
 Config.craft = { -- Gestion des craft
     ["Mineur"] = {
+        {
+            craftName = "Ferrite",
+            craftId = 16440,
+            nbCraftBeforeNextCraft = 50,
+            maxCraftPerDay = 1000,
+            minLvlToCraft = 1,
+            maxLvlToCraft = 200
+        },
         {
             craftName = "Magnesite",
             craftId = 748,

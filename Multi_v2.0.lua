@@ -1110,19 +1110,18 @@ Utils.colorPrint = Config.colorPrint
             if not self.workshopInfoInitialized then
                 local workshopInfo = self:GetCurrentWorkShopInfo("Astrub")
 
-                self.currentWorkshopMapId = workshopInfo.mapId
-
-                for kSkillId, vTbl in pairs(workshopInfo.workshopId) do
+                for kSkillId, vTbl in pairs(workshopInfo) do
                     if Utils:Equal(kSkillId, self.currentCraft.skillId) then
-                        local rand = global:random(1, #vTbl)
-                        self.currentWorkshopId = vTbl[rand]
+                        self.currentWorkshopMapId = vTbl.mapId
+                        local rand = global:random(1, #vTbl.workshopId)
+                        self.currentWorkshopId = vTbl.workshopId[rand]
                         self.workshopInfoInitialized = true
                         break
                     end
                 end
 
                 if not self.workshopInfoInitialized then
-                    Utils:Print("Aucun workshop trouvée !", "CraftManager", "error")
+                    Utils:Print("Aucun workshop trouvée !", "error")
                 end
             end
 
@@ -1382,7 +1381,7 @@ Utils.colorPrint = Config.colorPrint
             end
         end
         if updateLimit then
-            Utils:Print("Aucun craft n'a pu être séléctionner vérifier d'avoir ajouter des craft pour le métier " .. Worker.currentJob .. " de niveau inférieur ou égal a " .. jobLevel, "Craft", "error")
+            Utils:Print("Aucun craft n'a pu être séléctionner vérifier d'avoir ajouter des craft pour le métier " .. Worker.currentJob .. " de niveau inférieur ou égal a " .. jobLevel, "error")
             global:finishScript()
         end
         self:UpdateLimitCraft()

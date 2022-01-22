@@ -176,131 +176,211 @@ Info.bagsId = {
 Info.workshopInfo = {
     ["Mineur"] = {
         skillId = {32, 48},
-        ["Astrub"] = { mapId = 192939010, workshopId = {
+        ["Astrub"] = {
             ["32"] = { -- Fondre
-                515660,
-                515666
+                mapId = 192939010,
+                workshopId = {
+                    515660,
+                    515666
+                }
             },
             ["48"] = { -- Polir
-                515702
+                mapId = 192939010,
+                workshopId = {
+                    515702
+                }
             }
-        }}
+        }
     },
     ["Bûcheron"] = {
         skillId = {101},
-        ["Astrub"] = { mapId = 192940034, workshopId = {
+        ["Astrub"] = {
             ["101"] = {
-                516166,
-                515493
+                mapId = 192940034,
+                workshopId = {
+                    516166,
+                    515493
+                }
             }
-        }}
+        }
     },
     ["Alchimiste"] = {
         skillId = {23},
-        ["Astrub"] = { mapId = 192937988, workshopId = {
+        ["Astrub"] = {
             ["23"] = {
-                515520,
-                515549,
-                515516
+                mapId = 192937988,
+                workshopId = {
+                    515520,
+                    515549,
+                    515516
+                }
             }
-        }}
+        }
     },
     ["Paysan"] = {
         skillId = {27, 47},
-        ["Astrub"] = { mapId = 192939008, workshopId = {
+        ["Astrub"] = {
             ["27"] = { -- Cuire
-                514880,
-                514876
+                mapId = 192939008,
+                workshopId = {
+                    514880,
+                    514876
+                }
             },
             ["47"] = { -- Moudre
-                514878,
-                516162
+                mapId = 192939008,
+                workshopId = {
+                    514878,
+                    516162
+                }
             },
-        }}
+        }
     },
     ["Pêcheur"] = {
         skillId = {135},
-        ["Astrub"] = { mapId = 192937984, workshopId = {
+        ["Astrub"] = {
             ["135"] = {
-                515961,
-                516163
-
+                mapId = 192937984,
+                workshopId = {
+                    515961,
+                    516163
+                }
             }
-        }}
+        }
     },
     ["Tailleur"] = {
         skillId = {63},
-        ["Astrub"] = { mapId = 192940032, workshopId = {
+        ["Astrub"] = {
             ["63"] = {
-                515146,
-                515145,
-                515147
+                mapId = 192940032,
+                workshopId = {
+                    515146,
+                    515145,
+                    515147
+                }
             }
-        }}
+        }
     },
     ["Bijoutier"] = {
         skillId = {12},
-        ["Astrub"] = { mapId = 192937990, workshopId = {
+        ["Astrub"] = {
             ["12"] = {
-                515740,
-                515739,
-                516168,
-                516169
+                mapId = 192937990,
+                workshopId = {
+                    515740,
+                    515739,
+                    516168,
+                    516169
+                }
             }
-        }}
+        }
     },
     ["Cordonnier"] = {
         skillId = {13},
-        ["Astrub"] = { mapId = 192939016, workshopId = {
+        ["Astrub"] = {
             ["13"] = {
-                515848,
-                516200,
-                515851
+                mapId = 192939016,
+                workshopId = {
+                    515848,
+                    516200,
+                    515851
+                }
             }
-        }}
+        },
+        ["Bonta"] = {
+            ["13"] = {
+                mapId = 217055238,
+                workshopId = {
+                    521402,
+                    521401,
+                    521399
+                }
+            }
+        }
     },
     ["Forgeron"] = {
         skillId = {20},
-        ["Astrub"] = { mapId = 192939010, workshopId = {
+        ["Astrub"] = {
             ["20"] = {
-                516165
+                mapId = 192939010,
+                workshopId = {
+                    516165
+                }
             }
-        }}
+        },
+        ["Bonta"] = {
+            ["20"] = {
+                mapId = 217055236,
+                workshopId = {
+                    522298,
+                    524084,
+                    524086
+                }
+            }
+        }
     },
     ["Sculpteur"] = {
         skillId = {15},
-        ["Astrub"] = { mapId = 192940034, workshopId = {
+        ["Astrub"] = {
             ["15"] = {
-                515963,
-                515964
+                mapId = 192940034,
+                workshopId = {
+                    515963,
+                    515964
+                }
             }
-        }}
+        },
+        ["Bonta"] = {
+            ["15"] = {
+                mapId = 217058308,
+                workshopId = {
+                    524090,
+                    521431,
+                    521432
+                }
+            }
+        }
     },
     ["Bricoleur"] = {
         skillId = {171},
-        ["Astrub"] = { mapId = 192940038, workshopId = {
+        ["Astrub"] = {
             ["171"] = {
-                516170,
-                515689
+                mapId = 192940038,
+                workshopId = {
+                    516170,
+                    515689
+                }
             }
-        }}
+        }
     },
     ["Façonneur"] = {
         skillId = {171, 297, 201, 380},
-        ["Astrub"] = { mapId = 192940040, workshopId = {
+        ["Astrub"] = {
             ["156"] = { -- Bouclier
-                515830
+                mapId = 192940040,
+                workshopId = {
+                    515830
+                }
             },
             ["297"] = { -- Idole
-                516199
+                mapId = 192940040,
+                workshopId = {
+                    516199
+                }
             },
             ["201"] = { -- Trophée
-                516172
+                mapId = 192940040,
+                workshopId = {
+                    516172
+                }
             },
             ["380"] = { -- Prysmaradite
-                518018
+                mapId = 192940040,
+                workshopId = {
+                    518018
+                }
             }
-        }}
+        }
     }
 }
 
