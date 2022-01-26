@@ -1,5 +1,4 @@
-# Script AnkaBot-MultiFarm v2.0 By yaya#6140
-
+# Script AnkaBot-MultiFarm v2.0 By Yaya#0355
 ## Les nouveauté 
 
 1. Une configuration plus simple
