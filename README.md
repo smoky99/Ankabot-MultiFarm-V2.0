@@ -22,12 +22,14 @@
 ## Configuration
 
 1. Télécharger ça https://github.com/yaya3636/Yaya_Tools et placer tout les fichier dans un dossier nommer YAYA a la racine d'ankabot
-1. Déplacer le dossier YAYA a la racine du bot ( a l'emplacement de Ankabot.exe )
 2. Faites votre configuration dans le fichier Multi_Config.lua
 3. Charger le fichier Multi_v2.0.lua dans ankabot
 
 ## Multi_Config
 
-1. **Config.minPercentPodsBeforeBank, maxPercentPodsBeforeBank** Valeur min et max pods avant le retour banque
-2. **Config.worktime** Comme sur la v1.0 c'est ici que vous gèrer la plannification des métier
-3. **Config.craft** C'est ici que vous gèrer les craft a faire
+Les exemples sont dans le fichier config
+
+1. **Config.minPercentPodsBeforeBank, maxPercentPodsBeforeBank** Valeur min et max en % de pods choisi aléatoirement avant le retour banque
+2. **Config.worktime** Plannification des métier en fonction du jour et de l'heure
+3. **Config.craft** Gestion des craft
+4. **Config.salesInfo** Gestion des ventes/achats
