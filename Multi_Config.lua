@@ -1,20 +1,27 @@
 Config = {}
+
 Config.minMinutesOnFarmingZone, Config.maxMinutesOnFarmingZone = 0, 0 -- Si 0, 0 temps gérez via le script
+
 Config.minPercentPodsBeforeBank, Config.maxPercentPodsBeforeBank = 62, 87 -- Pods min, max avant le retour bank
-
 Config.bankMapId = 214696968 -- Mapid intérieur de la bank de votre choix
-
-Config.workshopArea = "Random" -- Choix de l'endroit des ateliers de craft (Random, Bonta, Astrub, Brakmar)
+Config.houseMode = false -- Active ou désactive le retour maison (true/false)
+Config.houseInfo = { -- Info pour le retour maison
+    houseOwnerPseudo = "pseudoDuCompteMaison#1234", -- Vous pouvez récupérer votre pseudo dans l'onglet social de dofus
+    houseOutsideMapId = 000000000, -- MapId éxtérieure de la maison
+    houseDoorCellId = 000, -- CellId de la porte
+    housePassword = 000000, -- Mot de passe de la porte
+    chestCellId = 000, -- CellId du coffre
+    chestPassword = 000000, -- Mot de passe du coffre, mettre -1 si le coffre appartient au bot
+    inHousePath = {
+        { map = 000000000, door = "316" }, -- Si votre maison a plusieurs pièces déplacer le bot jusqu'au coffre avec door pour une porte ou path si c'est un soleil
+        { map = 000000000, inTheTrunkMap = true } -- Une fois arriver sur la map du coffre mettre inTheTrunkMap = true
+    }
+}
 
 Config.minPercentLifeBeforeFight = 80 -- Pourcentage minimum de vie avant régén
 
-Config.houseMode = false -- Active ou désactive le retour maison (true/false)
-
-Config.tradeMode = true -- Active ou désactive la vente/achat automatique (true/false)
-Config.tradeArea = "Brakmar" -- Choix de l'endroit pour l'utilisation des HDV (Bonta, Brakmar)
-Config.tradeInterval = 4 -- Choix pour la vérification des items a vendre tout les x retour banque/maison
-
-Config.afkMapId = 191105026 -- MapId ou le bot ira afk
+Config.afkMapId = 179831296 -- MapId ou le bot ira afk
+Config.afkCellId = 365 -- Cellid ou le bot ira Afk
 
 -- Orientation
     -- droite = 0
@@ -26,8 +33,7 @@ Config.afkMapId = 191105026 -- MapId ou le bot ira afk
     -- haut = 6
     -- droite-haut = 7
 
-Config.afkOrientation = 3 -- Orientation du bot sur la cellid
-Config.afkCellId = 319 -- Cellid ou le bot ira Afk
+Config.afkOrientation = 1 -- Orientation du bot sur la cellid
 
 -- Job possible
     -- Déconnecté = Déconnexion du personnage pendant le temps que vous aurez definie
@@ -57,14 +63,15 @@ Config.wortimeJob = { -- Format hh:mm
         { startTime = "06:00", finishTime = "23:45", job = "Bûcheron" },
     },
     ["Jeudi"] = {
-        { startTime = "02:10", finishTime = "23:50", job = "Bûcheron" },
+        { startTime = "02:10", finishTime = "14:26", job = "Afk" },
+        { startTime = "14:26", finishTime = "15:03", job = "Bûcheron" },
     },
     ["Vendredi"] = {
         { startTime = "06:00", finishTime = "23:59", job = "Bûcheron" },
     },
     ["Samedi"] = {
-        { startTime = "06:00", finishTime = "21:15", job = "Afk" },
-        { startTime = "21:06", finishTime = "23:59", job = "Déconnecté" },
+        { startTime = "06:00", finishTime = "21:26", job = "Afk" },
+        { startTime = "21:26", finishTime = "23:59", job = "Déconnecté" },
 
     },
     ["Dimanche"] = {
@@ -75,19 +82,6 @@ Config.wortimeJob = { -- Format hh:mm
 Config.zaapExcepted = { -- Zaap a exclure
     -- 00000000000,
     -- 00000000000,
-}
-
-Config.houseInfo = { -- Info pour le retour maison
-    houseOwnerPseudo = "pseudoDuCompteMaison#1234", -- Vous pouvez récupérer votre pseudo dans l'onglet social de dofus
-    houseOutsideMapId = 000000000, -- MapId éxtérieure de la maison
-    houseDoorCellId = 000, -- CellId de la porte
-    housePassword = 000000, -- Mot de passe de la porte
-    chestCellId = 000, -- CellId du coffre
-    chestPassword = 000000, -- Mot de passe du coffre, mettre -1 si le coffre appartient au bot
-    inHousePath = {
-        { map = 000000000, door = "316" }, -- Si votre maison a plusieurs pièces déplacer le bot jusqu'au coffre avec door pour une porte ou path si c'est un soleil
-        { map = 000000000, inTheTrunkMap = true } -- Une fois arriver sur la map du coffre mettre inTheTrunkMap = true
-    }
 }
 
 Config.colorPrint = { -- Couleur des print
@@ -101,13 +95,7 @@ Config.colorPrint = { -- Couleur des print
     ["Error"] = "#fc0000"
 }
 
-Config.controller = { -- Non implémenter !
-    serverToConnect = "",
-    leaderAccountUsername = "",
-    leaderInGameUsername = "",
-    groupAccountUsername = {""},
-    groupInGameUsername = {""}
-}
+Config.workshopArea = "Random" -- Choix de l'endroit des ateliers de craft (Random, Bonta, Astrub, Brakmar)
 
 -- craftName = nom du craft
 -- craftId = id de l'objet a craft
@@ -313,6 +301,10 @@ Config.craft = { -- Gestion des craft
     }
 }
 
+Config.tradeMode = true -- Active ou désactive la vente/achat automatique (true/false)
+Config.tradeArea = "Brakmar" -- Choix de l'endroit pour l'utilisation des HDV (Bonta, Brakmar)
+Config.tradeInterval = 4 -- Choix pour la vérification des items a vendre tout les x retour banque/maison
+
 -- Sales
   -- objectName = Nom de l'objet
   -- objectId = Id de l'objet
@@ -366,6 +358,14 @@ Config.salesInfo = { -- Gestion du mode vente
     
         }
     }
+}
+
+Config.controller = { -- Non implémenter !
+    serverToConnect = "",
+    leaderAccountUsername = "",
+    leaderInGameUsername = "",
+    groupAccountUsername = {""},
+    groupInGameUsername = {""}
 }
 
 return Config

@@ -198,7 +198,6 @@ Utils.colorPrint = Config.colorPrint
     Movement.zaapDestinations = {}
     Movement.bankMapId = Config.bankMapId
 
-    Movement.init = false
     Movement.inBank = false
     Movement.inHouse = false
     Movement.printBank = false
@@ -232,11 +231,6 @@ Utils.colorPrint = Config.colorPrint
     Movement.iZaapOpen = false
 
     function Movement:Move()
-
-        if not self.init then
-            self.init = true
-        end
-
         Controller:ControllerManager()
 
         Packet:SubManager({["LeaveDialogMessage"] = CB_LeaveDialogMessage, ["TextInformationMessage"] = CB_TextInformationMessage}, true)
@@ -1519,7 +1513,6 @@ Utils.colorPrint = Config.colorPrint
                 Shop:ShopManager()
             end
         end
-
     end
 
     function Shop:UseHdv()
@@ -1878,7 +1871,7 @@ Utils.colorPrint = Config.colorPrint
 
             return pathToRet
         else
-            Utils:Print("Dijkstra ne trouve aucun path pour la mapId ("..toMapId..")", "dev", "error")
+            Utils:Print("Dijkstra ne trouve aucun path pour la mapId ("..toMapId..")", "error")
             Action:ResetScript()
         end
     end
@@ -1926,7 +1919,7 @@ Utils.colorPrint = Config.colorPrint
     Worker.printAfk = false
 
     function Worker:WorkManager()
-        if not self.init or self.nextTimeToReassignJob == os.date("%H:%M") then
+        if not self.init or self:TimeReachedForNextJob() then
             self:AssignJob()
         end
 
@@ -1936,48 +1929,7 @@ Utils.colorPrint = Config.colorPrint
         end
 
         if Utils:Equal(self.currentJob, "Afk") then
-            if not self.printAfk then
-                Utils:Print("Go AFK !", "Info")
-                self.printAfk = true
-                Movement:HavenBag()
-            end
-
-            if map:currentMapId() ~= Config.afkMapId then
-                if map:currentMap() == "0,0" then
-                    Movement:UseZaap(Config.afkMapId)
-                end
-
-                Movement:LoadRoad(Config.afkMapId)
-                Movement:MoveNext()
-                self:WorkManager()
-            else
-                local hour, minute = Utils:GenerateDateTime("h"), Utils:GenerateDateTime("m")
-                local totalTimeToAfk = 0
-                local hourFinish, minuteFinish = tonumber(string.match(self.nextTimeToReassignJob, "%d%d")), tonumber(string.match(self.nextTimeToReassignJob, "%d%d", 2))
-
-                totalTimeToAfk = math.abs((hour - hourFinish) * 60)
-                totalTimeToAfk = totalTimeToAfk + math.abs(minute - minuteFinish)
-
-                if math.abs(hour - hourFinish) == 0 then
-                    Utils:Print("Go AFK pendant " .. math.abs(minute - minuteFinish) .. " minutes", "Info")
-                else
-                    if math.abs(minute - minuteFinish) < 10 then
-                        Utils:Print("Go AFK pendant " .. math.abs(hour - hourFinish) .. "h" .. "0" .. math.abs(minute - minuteFinish), "Info")
-                    else
-                        Utils:Print("Go AFK pendant " .. math.abs(hour - hourFinish) .. "h" .. math.abs(minute - minuteFinish), "Info")
-                    end
-                end
-
-                map:moveToCell(Config.afkCellId)
-
-                Packet:SendPacket("GameMapChangeOrientationRequestMessage", function(msg)
-                    msg.direction = Config.afkOrientation
-                    return msg
-                end)
-
-                global:delay((totalTimeToAfk * 60) * 1000)
-            end
-
+            self:AFK()
         end
     end
 
@@ -2031,25 +1983,78 @@ Utils.colorPrint = Config.colorPrint
     end
 
     function Worker:Disconnect()
-        local hour, minute = Utils:GenerateDateTime("h"), Utils:GenerateDateTime("m")
-        local totalMinuteToDeconnect = 0
-        local hourFinish, minuteFinish = tonumber(string.match(self.nextTimeToReassignJob, "%d%d")), tonumber(string.match(self.nextTimeToReassignJob, "%d%d", 2))
+        local totalMinuteToDeconnect = self:GetTimeBeforeNextJob()
+        local hour, minute = Time:ConvertMinuteToHour(totalMinuteToDeconnect)
 
-        totalMinuteToDeconnect = math.abs((hour - hourFinish) * 60)
-        totalMinuteToDeconnect = totalMinuteToDeconnect + math.abs(minute - minuteFinish)
-
-
-        if math.abs(hour - hourFinish) == 0 then
-            Utils:Print("Déconnexion du personnage pendant " .. math.abs(minute - minuteFinish) .. " minutes", "Info")
+        if hour == 0 then
+            Utils:Print("Déconnexion du personnage pendant " .. minute .. " minutes", "Info")
         else
-            if math.abs(minute - minuteFinish) < 10 then
-                Utils:Print("Déconnexion du personnage pendant " .. math.abs(hour - hourFinish) .. "h" .. "0" .. math.abs(minute - minuteFinish), "Info")
+            if minute < 10 then
+                Utils:Print("Déconnexion du personnage pendant " .. hour .. "h" .. "0" .. minute, "Info")
             else
-                Utils:Print("Déconnexion du personnage pendant " .. math.abs(hour - hourFinish) .. "h" .. math.abs(minute - minuteFinish), "Info")
+                Utils:Print("Déconnexion du personnage pendant " .. hour .. "h" .. minute, "Info")
             end
         end
 
-        global:reconnectBis(totalMinuteToDeconnect)
+        global:reconnectBis(totalMinuteToDeconnect + 1)
+        return self:WorkManager()
+    end
+
+    function Worker:AFK()
+        if not self.printAfk then
+            Utils:Print("Go AFK !", "Info")
+            self.printAfk = true
+            Movement:HavenBag()
+        end
+
+        if map:currentMapId() ~= Config.afkMapId then
+            if map:currentMap() == "0,0" then
+                Movement:UseZaap(Config.afkMapId)
+            end
+
+            Movement:LoadRoad(Config.afkMapId)
+            Movement:MoveNext()
+            self:WorkManager()
+        else
+            local totalMinuteToAfk = self:GetTimeBeforeNextJob()
+            local hour, minute = Time:ConvertMinuteToHour(totalMinuteToAfk)
+            if hour == 0 then
+                Utils:Print("Go AFK pendant " .. minute .. " minutes", "Info")
+            else
+                if minute < 10 then
+                    Utils:Print("Go AFK pendant " .. hour .. "h" .. "0" .. minute, "Info")
+                else
+                    Utils:Print("Go AFK pendant " .. hour .. "h" .. minute, "Info")
+                end
+            end
+
+            map:moveToCell(Config.afkCellId)
+
+            global:delay(500)
+
+            Packet:SendPacket("GameMapChangeOrientationRequestMessage", function(msg)
+                msg.direction = Config.afkOrientation
+                return msg
+            end)
+
+            global:delay(((totalMinuteToAfk * 60) * 1000) + 60000)
+            return self:WorkManager()
+        end
+    end
+
+    function Worker:GetTimeBeforeNextJob()
+        local hour, minute = Utils:GenerateDateTime("h"), Utils:GenerateDateTime("m")
+        local totalTime = 0
+        local hourFinish, minuteFinish = tonumber(string.match(self.nextTimeToReassignJob, "%d%d")), tonumber(string.match(self.nextTimeToReassignJob, "%d%d", 2))
+
+        totalTime = math.abs((hour - hourFinish) * 60)
+        return totalTime + math.abs(minute - minuteFinish)
+    end
+
+    function Worker:TimeReachedForNextJob()
+        local currentHour, currentMinute = tonumber(string.match(os.date("%H:%M"), "%d%d")), tonumber(string.match(os.date("%H:%M"), "%d%d", 2))
+        local hourFinish, minuteFinish = tonumber(string.match(self.nextTimeToReassignJob, "%d%d")), tonumber(string.match(self.nextTimeToReassignJob, "%d%d", 2))
+        return (currentHour > hourFinish) or (currentHour == hourFinish and currentMinute >= minuteFinish)
     end
 
     -- Time
@@ -2101,6 +2106,12 @@ Utils.colorPrint = Config.colorPrint
             end
         end
         return diffTimeMin
+    end
+
+    function Time:ConvertMinuteToHour(minuteToConvert)
+        local hour = math.floor(minuteToConvert / 60)
+        local minute = ( minuteToConvert / 60 - math.floor(minuteToConvert / 60) ) * 60
+        return hour, minute
     end
 
     -- Packet
